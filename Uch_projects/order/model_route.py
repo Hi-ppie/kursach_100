@@ -64,11 +64,7 @@ def check_basket(provider, sql_file: str):
     return False
 
 def model_route_delete(provider, user_input: dict):
-    """
-    Полное удаление комиссии:
-    1) commission_members
-    2) commission_schedule
-    """
+
     _sql_members = provider.get('delete_commission_members.sql')
     _sql_schedule = provider.get('delete_commission_schedule.sql')
 

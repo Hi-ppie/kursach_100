@@ -1,1 +1,0 @@
-SELECT project_id, topic, grade FROM project JOIN student USING(student_id) WHERE student.surname = (%s)

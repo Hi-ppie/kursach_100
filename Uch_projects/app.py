@@ -13,8 +13,6 @@ with open("data/db_config.json") as f:
     app.config['db_config'] = json.load(f)
 with open("data/access.json") as f:
     app.config['db_access'] = json.load(f)
-with open("data/cache_config.json") as f:
-    app.config['cache_config'] = json.load(f)
 
 app.register_blueprint(blueprint_query, url_prefix='/query')
 app.register_blueprint(blueprint_auth, url_prefix='/auth')

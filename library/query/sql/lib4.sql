@@ -1,1 +1,0 @@
-SELECT project_id, topic, grade FROM project WHERE topic = %(topic)s

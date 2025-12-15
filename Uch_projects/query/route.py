@@ -1,4 +1,5 @@
-import os,json
+import os
+import json
 from flask import Blueprint, render_template, request
 from access import group_required
 from query.model_route import model_route
@@ -12,7 +13,7 @@ blueprint_query = Blueprint(
 
 provider = SQLProvider(os.path.join(os.path.dirname(__file__), 'sql'))
 
-with open("data/query.json") as f:
+with open("data/query.json", encoding="utf-8") as f:
     query_dict = json.load(f)
 
 @blueprint_query.route('/', methods=["GET"])
@@ -26,16 +27,23 @@ def query_index():
     query_id = request.args.get('id')
     return render_template(query_dict[query_id]['input'])
 
-
 @blueprint_query.route('/result', methods=["POST"])
 @group_required
 def query_result():
-    user_input = request.form
     query_id = request.args.get('id')
-    result_info = model_route(provider, user_input, query_dict[query_id]['file_name'])
+    user_input = request.form.to_dict()
+
+    result_info = model_route(
+        provider,
+        user_input,
+        query_dict[query_id]['file_name']
+    )
 
     if result_info.status:
-        results = result_info.result
-        return render_template(query_dict[query_id]['output'], results=results, id=query_id)
+        return render_template(
+            query_dict[query_id]['output'],
+            results=result_info.result,
+            id=query_id
+        )
     else:
         return render_template("err.html", id=query_id)
