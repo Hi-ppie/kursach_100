@@ -1,0 +1,9 @@
+SELECT
+    project_id,
+    project_topic,
+    grade,
+    student_surname,
+    supervisor_surname
+FROM project_report
+WHERE r_month = %s AND r_year = %s
+ORDER BY project_id;

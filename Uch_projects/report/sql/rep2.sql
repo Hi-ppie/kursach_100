@@ -1,1 +1,0 @@
-SELECT teacher_id, surname, num_projects, num_commissions FROM teacher_load_report WHERE tl_month = (%s) AND tl_year = (%s) ORDER BY teacher_id
