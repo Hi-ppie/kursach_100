@@ -1,1 +1,1 @@
-{"admin": ["blueprint_query","blueprint_report","blueprint_order"], "teacher": ["blueprint_query","blueprint_report"], "student": ["blueprint_report"], "secretary": ["blueprint_order"]}
+{"admin": ["blueprint_query","blueprint_report","blueprint_order"], "teacher": ["blueprint_query","blueprint_report"], "student": ["blueprint_query"], "secretary": ["blueprint_order"]}
