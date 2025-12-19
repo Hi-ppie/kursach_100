@@ -61,7 +61,7 @@ def report_result():
             return render_template(
                 "report_err.html",
                 id=rep_id,
-                message='Отчёт за указанный период нельзя создать!'
+                message='Отчёт уже существует или не может быть создан! Нажмите "Посмотреть" для просмотра.'
             )
 
     else:

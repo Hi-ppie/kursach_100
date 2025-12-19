@@ -29,9 +29,16 @@ def model_route_create(proc_name: str, rep_type: str, user_input: dict):
     else:
         return False
 
-    # ВАЖНО: не проверяем fetchall
-    stored_proc(proc_name, user_list)
-    return True
+    msg = stored_proc(proc_name, user_list)  # ← Получаем msg
+
+    if msg:
+        result_message = msg[0][0]  # ← ИСПРАВЛЕНИЕ: [0][0] вместо [0]['result'], т.к. это tuple с одной строкой
+        if 'успешно создан' in result_message:
+            return True
+        else:
+            return False  # Включая 'уже существует'
+    else:
+        return False  # Если msg пустой или ошибка
 
 
 
