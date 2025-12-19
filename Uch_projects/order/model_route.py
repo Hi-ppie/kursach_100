@@ -73,19 +73,6 @@ def model_route_delete(provider, user_input: dict):
 
     return True
 
-def load_basket_from_db(provider, project_id):
-    _sql = provider.get('load_commission.sql')
-    result = select_dict(_sql, {'project_id': project_id})
-
-    session['basket'] = {}
-    for res in result:
-        id_str = str(res['teacher_id'])
-        session['basket'][id_str] = {
-            'teacher_surname': res['surname'],
-            'teacher_account': res['account_num'],
-            'teacher_number': 1
-        }
-
 
 # -------------------------
 # Новая логика для одностраничного создания комиссии (AJAX-friendly)

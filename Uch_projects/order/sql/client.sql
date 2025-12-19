@@ -1,1 +1,0 @@
-SELECT student_id FROM student WHERE record_book_num = (%s)

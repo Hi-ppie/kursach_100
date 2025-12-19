@@ -1,1 +1,0 @@
-INSERT INTO `student`(record_book_num, surname, birth_date, study_group) VALUES(%(record_book_num)s, 'Default', CURDATE(), 'Group A')

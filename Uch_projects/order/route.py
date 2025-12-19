@@ -2,7 +2,7 @@ import os
 import datetime
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
 from order.model_route import (
-    model_route, model_route_add, model_route_insert, model_route_delete, load_basket_from_db,
+    model_route, model_route_add, model_route_insert, model_route_delete,
     get_disciplines, get_projects_by_discipline, create_commissions, get_busy_teachers_by_date, get_schedule
 )
 from database.sql_provider import SQLProvider
