@@ -1,4 +1,5 @@
-import os,json
+import os
+import json
 from flask import Blueprint, render_template, request, redirect, url_for
 from access import group_required
 from report.model_route import model_route_create, model_route_show
@@ -10,40 +11,77 @@ blueprint_report = Blueprint(
     template_folder='templates'
 )
 
+# SQL-файлы отчётов
 provider = SQLProvider(os.path.join(os.path.dirname(__file__), 'sql'))
 
-with open("data/report.json", encoding='utf-8') as f:
+# 🔧 ВАЖНО: report.json лежит в Uch_projects/data/, а не в report/data/
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+with open(os.path.join(BASE_DIR, 'data', 'report.json'), encoding='utf-8') as f:
     report_dict = json.load(f)
+
 
 @blueprint_report.route('/', methods=["GET"])
 @group_required
 def report_menu():
     rep = [(item["name"], item["id"]) for item in report_dict.values()]
-    return render_template("report_menu.html",items=rep)
+    return render_template("report_menu.html", items=rep)
+
 
 @blueprint_report.route('/report', methods=["GET"])
 @group_required
 def report_index():
     rep_id = request.args.get('id')
-    return render_template('report_index.html',item=report_dict[rep_id])
+    return render_template('report_index.html', item=report_dict[rep_id])
+
 
 @blueprint_report.route('/result', methods=["POST"])
+@group_required
 def report_result():
     user_input = request.form
-    rep_id = request.args.get('id')
-    if rep_id is None:
-        rep_id = user_input['id']
-    if user_input['year'] == '' or not user_input['year'].isdigit():
-        return redirect(url_for('blueprint_report.report_index',id=rep_id))
-    if user_input['action'] == 'Создать':
-        result_info = model_route_create(report_dict[rep_id]['proc'],user_input)
+    rep_id = request.args.get('id') or user_input.get('id')
+
+    if not rep_id:
+        return redirect(url_for('blueprint_report.report_menu'))
+
+    if user_input.get('action') == 'Создать':
+        result_info = model_route_create(
+            report_dict[rep_id]['proc'],
+            user_input,
+            rep_id
+        )
         if result_info:
-            return render_template("report_create.html",item=result_info,user=user_input,id=rep_id)
+            return render_template(
+                "report_create.html",
+                item=result_info,
+                user=user_input,
+                id=rep_id
+            )
         else:
-            return render_template("report_err.html", id=rep_id, message='Отчёт за указанный период нельзя создать!')
+            return render_template(
+                "report_err.html",
+                id=rep_id,
+                message='Отчёт за указанный период нельзя создать!'
+            )
+
     else:
-        results, schema = model_route_show(provider, user_input, report_dict[rep_id]['sql'])
+        results, schema = model_route_show(
+            provider,
+            user_input,
+            report_dict[rep_id]['sql'],
+            rep_id
+        )
         if results.status:
-            return render_template("report_show.html", schema=schema,results=results.result, item=report_dict[rep_id], date=user_input,id=rep_id)
+            return render_template(
+                "report_show.html",
+                schema=schema,
+                results=results.result,
+                item=report_dict[rep_id],
+                date=user_input,
+                id=rep_id
+            )
         else:
-            return render_template("report_err.html", id=rep_id, message='Отчёт за указанный период не найден!')
+            return render_template(
+                "report_err.html",
+                id=rep_id,
+                message='Отчёт за указанный период не найден!'
+            )

@@ -1,38 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Input</title>
+    <title>Ввод параметров отчёта</title>
 </head>
 <body>
 <center>
-    <h2>{{item['name']}}</h2>
-        <form action="{{ url_for('blueprint_report.report_result', id=item['id']) }}" method="post">
-        <label for="month">Месяц</label>
-        <select id="month" name="month">
-        <option value="1">Январь</option>
-        <option value="2">Февраль</option>
-        <option value="3">Март</option>
-        <option value="4">Апрель</option>
-        <option value="5">Май</option>
-        <option value="6">Июнь</option>
-        <option value="7">Июль</option>
-        <option value="8">Август</option>
-        <option value="9">Сентябрь</option>
-        <option value="10">Октябрь</option>
-        <option value="11">Ноябрь</option>
-        <option value="12">Декабрь</option>
-        </select>
-        <label for="year">Год</label>
-        <input type="text" placeholder="Введите год" name="year" id="year" >
-        <br><br>
 
-            <input type="submit" name="action" value="Создать">
-            <input type="submit" name="action" value="Посмотреть">
-        </form>
+    <h2>{{ item['name'] }}</h2>
+
+    <form action="{{ url_for('blueprint_report.report_result', id=item['id']) }}" method="post">
+        <input type="hidden" name="id" value="{{ item['id'] }}">
+
+        {% if item['type'] == 'by_date' %}
+            <label for="month">Месяц</label>
+            <input type="number" name="month" id="month" min="1" max="12" required>
+            <br><br>
+
+            <label for="year">Год</label>
+            <input type="number" name="year" id="year" required>
+            <br><br>
+
+        {% elif item['type'] == 'by_teacher' %}
+            <label for="teacher_id">ID преподавателя</label>
+            <input type="number" name="teacher_id" id="teacher_id" required>
+            <br><br>
+        {% endif %}
+
+        <input type="submit" name="action" value="Создать">
+        <input type="submit" name="action" value="Посмотреть">
+    </form>
 
     <br>
-    <a href="{{ url_for('blueprint_report.report_menu') }}" method="get">Назад</a>
+    <a href="{{ url_for('blueprint_report.report_menu') }}">Назад в меню отчётов</a>
     <br>
     <a href="{{ url_for('main_menu') }}">Главное меню</a>
 
