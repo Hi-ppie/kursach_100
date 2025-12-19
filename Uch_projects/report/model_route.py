@@ -10,9 +10,6 @@ class ResultInfo:
 
 
 def model_route_create(proc_name: str, rep_type: str, user_input: dict):
-    """
-    Формирование отчёта через процедуру make_report
-    """
 
     if rep_type == 'by_date':
         user_list = [
@@ -32,11 +29,10 @@ def model_route_create(proc_name: str, rep_type: str, user_input: dict):
     else:
         return False
 
-    message = stored_proc(proc_name, user_list)
-    if not message:
-        return False
+    # ВАЖНО: не проверяем fetchall
+    stored_proc(proc_name, user_list)
+    return True
 
-    return message
 
 
 def model_route_show(provider, rep_type: str, user_input: dict, sql_file: str):

@@ -74,3 +74,4 @@ def execute_sql(_sql: str, user_dict: dict):
         if cursor.rowcount == 0:
             print("WARNING: SQL executed but no rows affected")
     return True
+

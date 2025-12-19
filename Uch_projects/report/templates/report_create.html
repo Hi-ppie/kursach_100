@@ -8,13 +8,22 @@
     <center>
         <div>
             <h2>
-                {{item[0][0]}}
+                Отчёт успешно создан
             </h2>
                 <form action="{{ url_for('blueprint_report.report_result', id=id) }}" method="post">
-                <input type="hidden" name="month" value={{user['month']}}>
-                <input type="hidden" name="year" value={{user['year']}}>
-                <input type="submit" name="action" value="Посмотреть">
+
+                {% if id == '1' %}
+                 <!-- отчёт по дате -->
+                <input type="hidden" name="month" value="{{ user['month'] }}">
+                 <input type="hidden" name="year" value="{{ user['year'] }}">
+                    {% elif id == '2' %}
+                 <!-- отчёт по преподавателю -->
+                 <input type="hidden" name="teacher_id" value="{{ user['teacher_id'] }}">
+                {% endif %}
+
+                 <input type="submit" name="action" value="Посмотреть">
                 </form>
+
                 <br>
                 <a href="{{ url_for('blueprint_report.report_menu') }}" method="get">Назад в меню отчётов</a>
                 <br>

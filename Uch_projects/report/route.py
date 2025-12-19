@@ -46,9 +46,10 @@ def report_result():
     if user_input.get('action') == 'Создать':
         result_info = model_route_create(
             report_dict[rep_id]['proc'],
-            user_input,
-            rep_id
+            report_dict[rep_id]['type'],  # ← ВАЖНО
+            user_input
         )
+
         if result_info:
             return render_template(
                 "report_create.html",
@@ -66,10 +67,11 @@ def report_result():
     else:
         results, schema = model_route_show(
             provider,
+            report_dict[rep_id]['type'],  # ← by_teacher
             user_input,
-            report_dict[rep_id]['sql'],
-            rep_id
+            report_dict[rep_id]['sql']
         )
+
         if results.status:
             return render_template(
                 "report_show.html",
