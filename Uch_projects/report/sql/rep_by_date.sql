@@ -5,7 +5,8 @@ SELECT
     student_surname,
     supervisor_surname
 FROM project_report
-WHERE r_month = %s AND r_year = %s
+WHERE CAST(r_month AS UNSIGNED) = %s
+  AND CAST(r_year AS UNSIGNED) = %s
 ORDER BY project_id;
 
 SELECT

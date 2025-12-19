@@ -10,7 +10,8 @@
 <div align = center>
     <br><br>
     {% if 'project_id' in session %}
-    <a href="{{ url_for('blueprint_order.save_order') }}">Сформировать комиссию</a> <br><br>
+    <!-- Ссылка изменена на новый поток -->
+    <a href="{{ url_for('blueprint_order.create') }}">Сформировать комиссию</a> <br><br>
     {% endif %}
     <a href="{{ url_for('blueprint_order.client') }}">Вернуться назад</a>
 </div>

@@ -1,15 +1,19 @@
 from pymysql import connect
 from pymysql.err import OperationalError
+from pymysql.constants import CLIENT
 
 class DBContextManager:
-    def __init__(self, db_connect:dict):
+    def __init__(self, db_connect: dict):
         self.conn = None
         self.cursor = None
         self.db_connect = db_connect
 
     def __enter__(self):
         try:
-            self.conn = connect(**self.db_connect)
+            # Включаем поддержку multi statements
+            conn_params = dict(self.db_connect)
+            conn_params['client_flag'] = CLIENT.MULTI_STATEMENTS
+            self.conn = connect(**conn_params)
             self.cursor = self.conn.cursor()
             self.conn.begin()
             return self.cursor

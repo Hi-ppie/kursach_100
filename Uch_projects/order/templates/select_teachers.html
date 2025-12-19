@@ -1,0 +1,26 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Выбор преподавателей</title>
+</head>
+<body>
+<center>
+    <h2>Выберите преподавателей — членов комиссии</h2>
+    <form action="{{ url_for('blueprint_order.select_teachers') }}" method="post">
+        {% for t in teachers %}
+            <div>
+                <input type="checkbox" name="teacher_id" value="{{ t['teacher_id'] }}" id="t{{t['teacher_id']}}">
+                <label for="t{{t['teacher_id']}}">{{ t['surname'] }} ({{ t['account_num'] }})</label>
+            </div>
+        {% endfor %}
+        <br>
+        <input type="submit" value="Далее">
+    </form>
+    <br>
+    <a href="{{ url_for('main_menu') }}">Главное меню</a>
+</center>
+</body>
+</html>
+```

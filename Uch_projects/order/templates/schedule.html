@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Общее расписание комиссий</title>
+    <style>
+        table { border-collapse: collapse; width: 90%; }
+        th, td { border: 1px solid #999; padding: 6px; }
+    </style>
+</head>
+<body>
+<center>
+    <h2>Общее расписание комиссий</h2>
+
+    {% if schedule %}
+        <table>
+            <tr>
+                <th>Дата</th>
+                <th>cs_id</th>
+                <th>Project</th>
+                <th>Teacher (member)</th>
+            </tr>
+            {% for row in schedule %}
+            <tr>
+                <td>{{ row['cs_date'] }}</td>
+                <td>{{ row['cs_id'] }}</td>
+                <td>[{{ row['project_id'] }}] {{ row['project_topic'] or '' }}</td>
+                <td>{{ row['teacher_id'] or '' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>Нет назначенных комиссий</p>
+    {% endif %}
+
+    <br>
+    <a href="{{ url_for('main_menu') }}">Главное меню</a>
+</center>
+</body>
+</html>

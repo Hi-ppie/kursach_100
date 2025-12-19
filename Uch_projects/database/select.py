@@ -8,8 +8,15 @@ def select_list(_sql: str, user_list: list):
         if cursor is None:
             raise ValueError('Курсор не создан')
         else:
-            # Дублируем params для второго запроса (если multi-statement)
-            full_params = user_list + user_list  # [month, year, month, year]
+            # Подготовка параметров: повторяем user_list столько раз,
+            # сколько требуется для заполнения всех плейсхолдеров %s в SQL.
+            placeholders = _sql.count('%s')
+            if len(user_list) == 0:
+                full_params = []
+            else:
+                multiplier = placeholders // len(user_list) if placeholders >= len(user_list) else 1
+                full_params = user_list * multiplier
+
             cursor.execute(_sql, full_params)
             result.append(cursor.fetchall())
             if cursor.description:
@@ -22,10 +29,16 @@ def select_list(_sql: str, user_list: list):
 
 def select_dict(_sql, user_dict: dict):
     user_list = list(user_dict.values())
-    result, schema = select_list(_sql, user_list)
+    results, schemas = select_list(_sql, user_list)
+
     result_dict = []
-    for item in result:
-        result_dict.append(dict(zip(schema, item)))
+    # Преобразуем только первый result-set в список словарей (как ожидает остальной код)
+    if results and schemas:
+        first_rows = results[0]
+        first_schema = schemas[0] if schemas else []
+        for row in first_rows:
+            result_dict.append(dict(zip(first_schema, row)))
+
     print(result_dict)
     return result_dict
 
@@ -80,4 +93,3 @@ def execute_sql(_sql: str, user_dict: dict):
         if cursor.rowcount == 0:
             print("WARNING: SQL executed but no rows affected")
     return True
-

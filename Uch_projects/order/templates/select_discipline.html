@@ -1,0 +1,29 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Выбор дисциплины и даты</title>
+</head>
+<body>
+<center>
+    <h2>Выберите дисциплину и дату комиссии</h2>
+    <form action="{{ url_for('blueprint_order.select_discipline') }}" method="post">
+        <label for="discipline_id">Дисциплина</label>
+        <select name="discipline_id" id="discipline_id" required>
+            {% for d in disciplines %}
+                <option value="{{ d['discipline_id'] }}">{{ d['name'] }}</option>
+            {% endfor %}
+        </select>
+        <br><br>
+        <label for="defense_date">Дата комиссии</label>
+        <input type="date" name="defense_date" id="defense_date" required>
+        <br><br>
+        <input type="submit" value="Далее">
+    </form>
+    <br>
+    <a href="{{ url_for('blueprint_order.select_teachers') }}">Назад (преподаватели)</a>
+</center>
+</body>
+</html>
+```

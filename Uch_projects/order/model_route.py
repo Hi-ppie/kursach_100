@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from database.select import select_dict, insert_many, execute_sql
+from database.select import select_dict, insert_many, execute_sql, insert, select_list
 from flask import session
 
 @dataclass
@@ -85,3 +85,76 @@ def load_basket_from_db(provider, project_id):
             'teacher_account': res['account_num'],
             'teacher_number': 1
         }
+
+
+# -------------------------
+# Новая логика для одностраничного создания комиссии (AJAX-friendly)
+# -------------------------
+
+def get_disciplines(provider):
+    _sql = provider.get('get_disciplines.sql')
+    return select_dict(_sql, {})
+
+def get_projects_by_discipline(provider, discipline_id: int):
+    # select_dict ожидает dict
+    _sql = provider.get('projects_by_discipline.sql')
+    return select_dict(_sql, {'discipline_id': discipline_id})
+
+def get_busy_teachers_by_date(provider, defense_date: str):
+    """
+    Возвращает список teacher_id, у которых есть комиссия на указанную дату.
+    """
+    _sql = provider.get('get_busy_teachers.sql')
+    # используем select_list, т.к. хочется получить «сырые» кортежи
+    results, schemas = select_list(_sql, [defense_date])
+    busy = []
+    if results and results[0]:
+        for row in results[0]:
+            busy.append(row[0])
+    return busy
+
+def get_schedule(provider):
+    """
+    Возвращает расписание комиссий (в виде списка словарей)
+    """
+    _sql = provider.get('get_schedule.sql')
+    results, schemas = select_list(_sql, [])
+    schedule = []
+    if results and schemas and results[0]:
+        cols = schemas[0]
+        for row in results[0]:
+            schedule.append(dict(zip(cols, row)))
+    return schedule
+
+def create_commissions(provider, teacher_ids: list, projects: list, defense_date: str):
+    """
+    Создаёт для каждого проекта запись в commission_schedule и добавляет членов комиссии.
+    teacher_ids: list of int
+    projects: list of dicts, каждый содержит project_id и supervisor_id и т.д.
+    defense_date: 'YYYY-MM-DD' string
+    Возвращает tuple (created, skipped)
+    """
+    created = []
+    skipped = []
+
+    _sql_insert_o = provider.get('insert_o.sql')     # INSERT commission_schedule (cs_date, project_id)
+    _sql_insert_ol = provider.get('insert_ol.sql')   # INSERT commission_members (cs_id, teacher_id)
+
+    for proj in projects:
+        try:
+            params_o = {'defense_date': defense_date, 'project_id': proj['project_id']}
+            cs_id = insert(_sql_insert_o, params_o)
+            if not cs_id:
+                continue
+            for t in teacher_ids:
+                if int(t) == int(proj.get('supervisor_id')):
+                    skipped.append({'project_id': proj['project_id'], 'teacher_id': int(t)})
+                    continue
+                params_member = {'o_id': cs_id, 'teacher_id': int(t)}
+                insert(_sql_insert_ol, params_member)
+            created.append({'project_id': proj['project_id'], 'cs_id': cs_id})
+        except Exception as e:
+            print(f"[create_commissions] Error for project {proj}: {e}")
+            continue
+
+    return created, skipped
