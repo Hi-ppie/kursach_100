@@ -58,12 +58,12 @@ def model_route_show(provider, rep_type: str, user_input: dict, sql_file: str):
             int(user_input['teacher_id'])
         ]
     else:
-        return ResultInfo(result=(), status=False, err_message="UNKNOWN REPORT TYPE"), ()
+        return ResultInfo(result=(), status=False, err_message="UNKNOWN REPORT TYPE"), (), None
 
     _sql = provider.get(sql_file)
-    result, schema = select_list(_sql, sql_params)
+    results, schemas = select_list(_sql, sql_params)
 
-    if result:
-        return ResultInfo(result=result, status=True, err_message=""), schema
+    if results and results[0]:  # Проверяем, есть ли основной результат
+        return ResultInfo(result=results[0], status=True, err_message=""), schemas[0] if schemas else (), results[1] if len(results) > 1 else None
     else:
-        return ResultInfo(result=result, status=False, err_message="DATA NOT FOUND"), schema
+        return ResultInfo(result=(), status=False, err_message="DATA NOT FOUND"), (), None

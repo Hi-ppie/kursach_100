@@ -2,16 +2,22 @@ from database.DBcm import DBContextManager
 from flask import current_app, session
 
 def select_list(_sql: str, user_list: list):
-    result = None
+    result = []
     schema = []
     with DBContextManager(current_app.config['db_config']) as cursor:
         if cursor is None:
             raise ValueError('Курсор не создан')
         else:
-            cursor.execute(_sql, user_list)
-            result = cursor.fetchall()
-            for item in cursor.description:
-                schema.append(item[0])
+            # Дублируем params для второго запроса (если multi-statement)
+            full_params = user_list + user_list  # [month, year, month, year]
+            cursor.execute(_sql, full_params)
+            result.append(cursor.fetchall())
+            if cursor.description:
+                schema.append([item[0] for item in cursor.description])
+            while cursor.nextset():
+                result.append(cursor.fetchall())
+                if cursor.description:
+                    schema.append([item[0] for item in cursor.description])
     return result, schema
 
 def select_dict(_sql, user_dict: dict):

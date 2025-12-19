@@ -64,14 +64,14 @@ def report_result():
                 message='Отчёт уже существует или не может быть создан! Нажмите "Посмотреть" для просмотра.'
             )
 
+
     else:
-        results, schema = model_route_show(
+        results, schema, stat = model_route_show(
             provider,
-            report_dict[rep_id]['type'],  # ← by_teacher
+            report_dict[rep_id]['type'],
             user_input,
             report_dict[rep_id]['sql']
         )
-
         if results.status:
             return render_template(
                 "report_show.html",
@@ -79,7 +79,8 @@ def report_result():
                 results=results.result,
                 item=report_dict[rep_id],
                 date=user_input,
-                id=rep_id
+                id=rep_id,
+                stat=stat  # Добавьте это
             )
         else:
             return render_template(
