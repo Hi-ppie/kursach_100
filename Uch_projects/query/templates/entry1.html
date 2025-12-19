@@ -1,27 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Input</title>
+  <meta charset="UTF-8">
+  <title>Поиск по дате</title>
 </head>
 <body>
-<center>
-    <h2>Ввод параметров поиска</h2>
-    <p>
-        <h4>Поиск проектов по дате</h4>
-        <form action="{{ url_for('blueprint_query.query_result', id=1) }}" method="post">
-        <label for="defense_date">Дата</label>
-        <input type="date" name="defense_date" id="defense_date" >
-        <br><br>
+{% extends "base.html" %}
+{% block title %}Поиск по дате{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>Поиск проектов по дате</h4>
+      <form id="dateSearchForm" action="{{ url_for('blueprint_query.query_result', id=1) }}" method="post">
+        <div class="mb-3">
+          <label class="form-label">Дата</label>
+          <!-- Используем type="date" + атрибут placeholder для наглядности; JS преобразует и текстовый ввод -->
+          <input class="form-control" type="date" id="defense_date" name="defense_date" placeholder="ДД.MM.ГГГГ или YYYY-MM-DD" required>
+          <div class="form-text">Можно вводить через календарь или в формате DD.MM.YYYY (например 11.05.2025).</div>
+        </div>
+        <button class="btn btn-primary" type="submit">Поиск</button>
+        <a class="btn btn-link" href="{{ url_for('blueprint_query.query_menu') }}">Назад</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-        <input type="submit" value="поиск">
-        </form>
+{% block scripts %}
+{{ super() }}
+<script>
+/*
+  Перед отправкой формы: если пользователь ввёл дату в "текстном" формате
+  (например "11.05.2025", "11/05/2025" или "11-05-2025"), преобразуем в ISO YYYY-MM-DD.
+  Если поле уже в ISO (например от date-picker), оставляем как есть.
+*/
+(function(){
+  const form = document.getElementById('dateSearchForm');
+  const input = document.getElementById('defense_date');
 
-    <br>
-    <a href="{{ url_for('blueprint_query.query_menu') }}" method="get">Назад</a>
-    <br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
+  function toISOFromParts(d, m, y){
+    if (y.length === 2) y = '20' + y;
+    d = d.padStart(2,'0'); m = m.padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
 
-</center>
+  form.addEventListener('submit', function(e){
+    let v = input.value && input.value.trim();
+    if (!v) {
+      // пустое поле — браузер покажет required
+      return;
+    }
+
+    // Если уже в ISO формате YYYY-MM-DD — ничего не делаем
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      return;
+    }
+
+    // Если ввёл с точками, слэшами или дефисами — предполагаем DD.MM.YYYY или DD/MM/YYYY или DD-MM-YYYY
+    let m;
+    if (v.indexOf('.') !== -1) {
+      m = v.split('.');
+    } else if (v.indexOf('/') !== -1) {
+      m = v.split('/');
+    } else if (v.indexOf('-') !== -1) {
+      // может быть DD-MM-YYYY либо YYYY-MM-DD (we already excluded ISO), поэтому если первая часть длина 4 — ISO-like
+      const parts = v.split('-');
+      if (parts[0].length === 4 && parts[0].match(/^\d{4}$/)) {
+        // treat as ISO-ish but not strict; try to normalize
+        const iso = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+        input.value = iso;
+        return;
+      }
+      m = parts;
+    }
+
+    if (m && m.length === 3) {
+      // treat as DD.MM.YYYY
+      const day = m[0].replace(/\D/g,'');
+      const mon = m[1].replace(/\D/g,'');
+      const year = m[2].replace(/\D/g,'');
+      // basic validation
+      if (day && mon && year) {
+        const iso = toISOFromParts(day, mon, year);
+        input.value = iso;
+        return;
+      }
+    }
+
+    // last resort: try to parse yyyy/mm/dd patterns with different separators
+    // if cannot parse, allow submit and backend will handle/return err
+  });
+})();
+</script>
+{% endblock %}
 </body>
 </html>

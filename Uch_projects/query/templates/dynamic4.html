@@ -1,39 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dynamic</title>
-    <link href="{{url_for('static', filename='sem1.css')}}" rel="stylesheet" type="text/css">
-</head>
-    <body>
-    <center>
-        <div>
-            <h2>
-                Результат поиска проектов по теме: {{results[0]['topic']}}
-            </h2>
-
-
-            <p>Найдено позиций: {{ results|length }}</p>
-            <table border="1">
-                <tr class=tab_title>
-                    <td>Код</td>
-                    <td>Тема</td>
-                    <td>Оценка</td>
-                </tr>
-                {% for result in results %}
-                <tr class=tab_title>
-                    <td>{{result['project_id']}}</td>
-                    <td>{{result['topic']}}</td>
-                    <td>{{result['grade']}}</td>
-                </tr>
-                {% endfor %}
-            </table>
-
-                <br>
-                <a href="{{ url_for('blueprint_query.query_index', id=id) }}" method="get">Назад</a>
-                <br>
-                <a href="{{ url_for('main_menu') }}">Главное меню</a>
-        </div>
-    </center>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Результат поиска{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-10 offset-md-1">
+    <div class="card-compact">
+      <h4>Результат поиска проектов по теме: {{ results[0]['topic'] if results and results[0].get('topic') else '' }}</h4>
+      <p>Найдено позиций: {{ results|length }}</p>
+      <table class="table table-sm">
+        <thead><tr><th>Код</th><th>Тема</th><th>Оценка</th></tr></thead>
+        <tbody>
+          {% for r in results %}
+            <tr>
+              <td>{{ r['project_id'] }}</td>
+              <td>{{ r['topic'] }}</td>
+              <td>{{ r['grade'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a class="btn btn-link" href="{{ url_for('blueprint_query.query_index', id=id) }}">Назад</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

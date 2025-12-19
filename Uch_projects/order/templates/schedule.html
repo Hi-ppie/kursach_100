@@ -1,40 +1,151 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Общее расписание комиссий</title>
-    <style>
-        table { border-collapse: collapse; width: 90%; }
-        th, td { border: 1px solid #999; padding: 6px; }
-    </style>
-</head>
-<body>
-<center>
-    <h2>Общее расписание комиссий</h2>
+{% extends "base.html" %}
+{% block title %}Расписание комиссий{% endblock %}
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<style>
+  #calendar { max-width:1100px; margin: 0 auto; }
+  .fc .fc-event-title { white-space: normal; word-break: break-word; font-size: 0.95rem; }
+  .fc .fc-daygrid-day-frame { min-height: 90px; }
+  .schedule-actions { display:flex; justify-content:center; gap:10px; margin-top:14px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-10 offset-lg-1">
+    <div class="card-compact">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Расписание комиссий</h4>
+        <small class="text-muted">Нажмите на событие, чтобы увидеть подробности или удалить</small>
+      </div>
+      <div id="calendar"></div>
 
-    {% if schedule %}
-        <table>
-            <tr>
-                <th>Дата</th>
-                <th>cs_id</th>
-                <th>Project</th>
-                <th>Teacher (member)</th>
-            </tr>
-            {% for row in schedule %}
-            <tr>
-                <td>{{ row['cs_date'] }}</td>
-                <td>{{ row['cs_id'] }}</td>
-                <td>[{{ row['project_id'] }}] {{ row['project_topic'] or '' }}</td>
-                <td>{{ row['teacher_id'] or '' }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    {% else %}
-        <p>Нет назначенных комиссий</p>
-    {% endif %}
+      <div class="schedule-actions">
+        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_order.create') }}">
+          <i class="bi bi-arrow-left-circle me-1"></i> Вернуться к формированию комиссий
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
-</center>
-</body>
-</html>
+<!-- Modal подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Удалить комиссию?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="deleteModalBody">Вы действительно хотите удалить комиссию?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="deleteCancelBtn" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button id="deleteConfirmBtn" type="button" class="btn btn-danger">Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
+  let calendar;
+
+  function escapeHtml(s) {
+    if (!s && s !== 0) return '';
+    return String(s).replace(/[&<>"'`=\/]/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[c];
+    });
+  }
+
+  let selectedEvent = null;
+  const deleteModalEl = document.getElementById('deleteModal');
+  const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const deleteModalBody = document.getElementById('deleteModalBody');
+  const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+
+  function loadEventsAndRender() {
+    fetch('{{ url_for("blueprint_order.debug_events") }}')
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(events => {
+        if (!Array.isArray(events)) {
+          calendarEl.innerHTML = '<div class="text-danger">Ошибка загрузки расписания: некорректный ответ сервера.</div>';
+          console.error('debug_events returned:', events);
+          return;
+        }
+
+        if (calendar) calendar.remove();
+
+        calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          height: 650,
+          events: events,
+          dayMaxEventRows: 3,
+          eventDisplay: 'block',
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth'
+          },
+          eventContent: function(arg) {
+            const title = escapeHtml(arg.event.title || '');
+            return { html: `<div class="fc-event-title">${title}</div>` };
+          },
+          eventClick: function(info) {
+            selectedEvent = info.event;
+            const title = selectedEvent.title || '';
+            deleteModalBody.innerHTML = `<strong>${escapeHtml(title)}</strong><br>Дата: ${selectedEvent.startStr}<br>Вы можете удалить эту комиссию (удалит всех членов и сам график).`;
+            deleteModal.show();
+          }
+        });
+
+        calendar.render();
+      })
+      .catch(err => {
+        console.error('Fetch or JSON error:', err);
+        calendarEl.innerHTML = '<div class="text-danger">Ошибка загрузки расписания: ' + escapeHtml(err.message) + '</div>';
+      });
+  }
+
+  deleteConfirmBtn.addEventListener('click', function(){
+    if (!selectedEvent) {
+      deleteModal.hide();
+      return;
+    }
+    const cs_id = selectedEvent.id;
+    deleteConfirmBtn.disabled = true;
+    fetch('{{ url_for("blueprint_order.ajax_delete_cs") }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({cs_id: cs_id})
+    })
+      .then(r => r.json())
+      .then(resp => {
+        deleteConfirmBtn.disabled = false;
+        if (resp && resp.ok) {
+          const ev = calendar.getEventById(cs_id);
+          if (ev) ev.remove();
+          deleteModal.hide();
+        } else {
+          alert('Ошибка удаления: ' + (resp && resp.error ? resp.error : 'неизвестная ошибка'));
+        }
+      })
+      .catch(err => {
+        deleteConfirmBtn.disabled = false;
+        console.error('Delete error:', err);
+        alert('Ошибка сети при удалении: ' + err.message);
+      });
+  });
+
+  loadEventsAndRender();
+});
+</script>
+{% endblock %}

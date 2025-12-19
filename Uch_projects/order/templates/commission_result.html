@@ -1,38 +1,24 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Результат формирования комиссии</title>
-</head>
-<body>
-<center>
-    <h2>Результат формирования комиссии</h2>
-
-    {% if created %}
-        <h3>Создано комиссий (по проектам): {{ created|length }}</h3>
-        <ul>
-            {% for c in created %}
-                <li>Проект {{ c['project_id'] }} — cs_id = {{ c['cs_id'] }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>Комиссии не созданы.</p>
-    {% endif %}
-
-    {% if skipped %}
-        <h3>Пропущены добавления членов (научный руководитель совпадает):</h3>
-        <ul>
-            {% for s in skipped %}
-                <li>Проект {{ s['project_id'] }}, преподаватель {{ s['teacher_id'] }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    <br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
-    <br>
-    <!-- Ссылка исправлена: теперь ведёт на одностраничный поток create -->
-    <a href="{{ url_for('blueprint_order.create') }}">Сформировать ещё одну комиссию</a>
-</center>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Результат{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact">
+      <h4>Результат формирования комиссии</h4>
+      {% if created %}
+        <div class="alert alert-success">Создано комиссий: {{ created|length }}</div>
+        <ul>{% for c in created %}<li>Проект {{ c['project_id'] }} — cs_id = {{ c['cs_id'] }}</li>{% endfor %}</ul>
+      {% else %}
+        <div class="alert alert-warning">Комиссии не созданы.</div>
+      {% endif %}
+      {% if skipped %}
+        <div class="alert alert-info">Пропущено (научный руководитель совпадает):<ul>{% for s in skipped %}<li>Проект {{ s['project_id'] }}, преп. {{ s['teacher_id'] }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      <div class="mt-3">
+        <a class="btn btn-primary" href="{{ url_for('blueprint_order.create') }}">Сформировать ещё</a>
+        <a class="btn btn-link" href="{{ url_for('main_menu') }}">Главная</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

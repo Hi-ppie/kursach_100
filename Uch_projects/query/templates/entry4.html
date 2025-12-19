@@ -1,27 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Input</title>
-</head>
-<body>
-<center>
-    <h2>Ввод параметров поиска</h2>
-    <p>
-        <h4>Поиск проектов по теме</h4>
-        <form action="{{ url_for('blueprint_query.query_result', id=4) }}" method="post">
-        <label for="topic">Тема</label>
-        <input type="text" placeholder="Введите тему" name="topic" id="topic" >
-        <br><br>
-
-        <input type="submit" value="поиск">
-        </form>
-
-    <br>
-    <a href="{{ url_for('blueprint_query.query_menu') }}" method="get">Назад</a>
-    <br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
-
-</center>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Поиск по теме{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>Поиск проектов по теме</h4>
+      <form action="{{ url_for('blueprint_query.query_result', id=4) }}" method="post">
+        <div class="mb-3">
+          <label class="form-label">Тема</label>
+          <input class="form-control" type="text" name="topic" placeholder="Введите тему">
+        </div>
+        <button class="btn btn-primary" type="submit">Поиск</button>
+        <a class="btn btn-link" href="{{ url_for('blueprint_query.query_menu') }}">Назад</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

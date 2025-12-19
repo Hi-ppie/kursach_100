@@ -1,11 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Выход</title>
-
-</head>
-<body>
-    <h2>До свидания!</h2>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Выход{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact text-center">
+      <h3>До свидания!</h3>
+      <a class="btn btn-primary mt-3" href="{{ url_for('blueprint_auth.auth_index') }}">Авторизация</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

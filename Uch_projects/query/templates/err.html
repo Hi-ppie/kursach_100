@@ -1,28 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Error</title>
-
-</head>
-    <body>
-
-            <h1>
-                ОШИБКА!
-            </h1>
-    <center>
-            <h2>
-                Ничего не найдено по указанным параметрам!
-            </h2>
-            <h4>
-                <div>Указанные параметры являются некорректными</div>
-                <div>Попробуйте ввести другие параметры</div>
-            </h4>
-
-            <a href="{{ url_for('blueprint_query.query_index',id=id) }}" method="get">Вернуться к вводу </a>
-            <br><br>
-            <a href="{{ url_for('main_menu') }}">Главное меню</a>
-
-    </center>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Ошибка поиска{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact text-center">
+      <h4>Ничего не найдено</h4>
+      <p class="text-muted">Попробуйте ввести другие параметры</p>
+      <a class="btn btn-primary" href="{{ url_for('blueprint_query.query_index', id=id) }}">Вернуться к вводу</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

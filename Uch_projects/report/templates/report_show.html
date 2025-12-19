@@ -1,37 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Show</title>
-</head>
-    <body>
-    <center>
-        <div>
-            <h2>
-                {{item['name']}} за {{date['month']}}.{{date['year']}}
-            </h2>
-            {% if results %}
-            <table border="1">
-                <tr class=tab_title>
-                    {% for column in item['col'] %}
-                    <td>{{ column }}</td>
-                    {% endfor %}
-                </tr>
-
-                {% for row in results %}
-                <tr class="tab_title">
-                    {% for item in row %}
-                    <td>{{ item }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </table>
-            {% endif %}
-                <br>
-                <a href="{{ url_for('blueprint_report.report_index', id=id) }}" method="get">Назад</a>
-                <br>
-                <a href="{{ url_for('main_menu') }}">Главное меню</a>
-        </div>
-    </center>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Отчёт{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-10 offset-md-1">
+    <div class="card-compact">
+      <h4>{{ item['name'] }} за {{ date['month'] }}.{{ date['year'] }}</h4>
+      {% if results %}
+        <table class="table table-sm">
+          <thead>
+            <tr>{% for column in item['col'] %}<th>{{ column }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for row in results %}
+              <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-muted">Данные отсутствуют</p>
+      {% endif %}
+      <a class="btn btn-link" href="{{ url_for('blueprint_report.report_index', id=id) }}">Назад</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

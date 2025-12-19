@@ -1,27 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Menu</title>
-    <link href="{{url_for('static', filename='sem1.css')}}" rel="stylesheet" type="text/css">
-</head>
-    <body>
-    <center>
-
-            <h1>
-                Главное меню запросов
-            </h1>
-            <a href="{{ url_for('blueprint_query.query_index', id=1) }}">Проекты по дате</a>
-            <br><br>
-            <a href="{{ url_for('blueprint_query.query_index', id=2) }}">Проекты по студенту</a>
-            <br><br>
-            <a href="{{ url_for('blueprint_query.query_index', id=3) }}">Проекты по преподавателю</a>
-            <br><br>
-            <a href="{{ url_for('blueprint_query.query_index', id=4) }}">Проекты по теме</a>
-            <br><br>
-            <a href="{{ url_for('main_menu') }}">Назад в главное меню</a>
-
-        </div>
-    </center>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Меню запросов{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h3>Главное меню запросов</h3>
+      <ul class="list-unstyled mt-3">
+        <li><a href="{{ url_for('blueprint_query.query_index', id=1) }}">Проекты по дате</a></li>
+        <li><a href="{{ url_for('blueprint_query.query_index', id=2) }}">Проекты по студенту</a></li>
+        <li><a href="{{ url_for('blueprint_query.query_index', id=3) }}">Проекты по преподавателю</a></li>
+        <li><a href="{{ url_for('blueprint_query.query_index', id=4) }}">Проекты по теме</a></li>
+      </ul>
+      <a class="btn btn-link mt-2" href="{{ url_for('main_menu') }}">Назад в главное меню</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,41 +1,23 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Ввод параметров отчёта</title>
-</head>
-<body>
-<center>
-
-    <h2>{{ item['name'] }}</h2>
-
-    <form action="{{ url_for('blueprint_report.report_result', id=item['id']) }}" method="post">
+{% extends "base.html" %}
+{% block title %}Параметры отчёта{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>{{ item['name'] }}</h4>
+      <form action="{{ url_for('blueprint_report.report_result', id=item['id']) }}" method="post">
         <input type="hidden" name="id" value="{{ item['id'] }}">
-
         {% if item['type'] == 'by_date' %}
-            <label for="month">Месяц</label>
-            <input type="number" name="month" id="month" min="1" max="12" required>
-            <br><br>
-
-            <label for="year">Год</label>
-            <input type="number" name="year" id="year" required>
-            <br><br>
-
+          <div class="mb-2"><label class="form-label">Месяц</label><input class="form-control" type="number" name="month" min="1" max="12" required></div>
+          <div class="mb-2"><label class="form-label">Год</label><input class="form-control" type="number" name="year" required></div>
         {% elif item['type'] == 'by_teacher' %}
-            <label for="teacher_id">ID преподавателя</label>
-            <input type="number" name="teacher_id" id="teacher_id" required>
-            <br><br>
+          <div class="mb-2"><label class="form-label">ID преподавателя</label><input class="form-control" type="number" name="teacher_id" required></div>
         {% endif %}
-
-        <input type="submit" name="action" value="Создать">
-        <input type="submit" name="action" value="Посмотреть">
-    </form>
-
-    <br>
-    <a href="{{ url_for('blueprint_report.report_menu') }}">Назад в меню отчётов</a>
-    <br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
-
-</center>
-</body>
-</html>
+        <button class="btn btn-primary" name="action" value="Посмотреть" type="submit">Посмотреть</button>
+        <button class="btn btn-outline-secondary" name="action" value="Создать" type="submit">Создать</button>
+      </form>
+      <a class="btn btn-link mt-2" href="{{ url_for('blueprint_report.report_menu') }}">Назад</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

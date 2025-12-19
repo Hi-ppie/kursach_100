@@ -1,125 +1,157 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Формирование комиссии (одна страница)</title>
-    <script>
-    async function loadProjects() {
-        const disc = document.getElementById('discipline_id').value;
-        const date = document.getElementById('defense_date').value;
+{% extends "base.html" %}
+{% block title %}Формирование комиссии{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-10 offset-lg-1">
+    <div class="card-compact">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Формирование комиссии</h3>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('blueprint_order.schedule') }}" target="_blank">
+          <i class="bi bi-calendar3"></i> Расписание
+        </a>
+      </div>
+
+      <form id="createForm" action="{{ url_for('blueprint_order.create') }}" method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Преподаватели</label>
+            <div id="teachersList" class="border rounded p-2" style="max-height:260px; overflow:auto;">
+              {% for t in teachers %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="teacher_id" value="{{ t['teacher_id'] }}" id="t{{t['teacher_id']}}">
+                <label class="form-check-label" for="t{{t['teacher_id']}}">{{ t['surname'] }} <small class="text-muted">({{ t['account_num'] }})</small></label>
+              </div>
+              {% endfor %}
+            </div>
+            <div id="busy_info" class="form-text text-warning mt-1"></div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Дисциплина</label>
+            <select id="discipline_id" name="discipline_id" class="form-select" required>
+              {% for d in disciplines %}
+                <option value="{{ d['discipline_id'] }}">{{ d['name'] }}</option>
+              {% endfor %}
+            </select>
+
+            <label class="form-label mt-3">Дата комиссии</label>
+            <input id="defense_date" name="defense_date" class="form-control" type="date" required>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Проекты</label>
+            <div id="projects" class="border rounded p-2" style="min-height:80px;">
+              Загрузка...
+            </div>
+            <div id="projects_count" class="form-text text-muted mt-1"></div>
+          </div>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-between">
+          <div>
+            <a class="btn btn-outline-secondary" href="{{ url_for('blueprint_order.order_index') }}">
+              <i class="bi bi-arrow-left-circle me-1"></i> Назад
+            </a>
+            <a class="btn btn-link" href="{{ url_for('main_menu') }}">Главное меню</a>
+          </div>
+          <div>
+            <button id="submitBtn" class="btn btn-primary" type="submit">Сформировать комиссию</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+/* AJAX helper + UI logic (preserves previous behavior) */
+async function loadProjects() {
+    const disc = document.getElementById('discipline_id').value;
+    const projectsDiv = document.getElementById('projects');
+    const projectsCount = document.getElementById('projects_count');
+    projectsDiv.innerHTML = 'Загрузка...';
+    projectsCount.textContent = '';
+    try {
         const res = await fetch('{{ url_for("blueprint_order.ajax_projects") }}', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({discipline_id: disc})
         });
+        if (!res.ok) throw new Error('Ошибка запроса: ' + res.status);
         const data = await res.json();
-        const projectsDiv = document.getElementById('projects');
+        const list = data.projects || [];
         projectsDiv.innerHTML = '';
-        if (data.projects && data.projects.length) {
-            data.projects.forEach(p => {
-                const div = document.createElement('div');
-                div.style.border = '1px solid #ccc';
-                div.style.padding = '6px';
-                div.style.margin = '4px';
-                div.innerHTML = `<label>
-                    <input type="checkbox" name="project_id" value="${p.project_id}"> [${p.project_id}] ${p.topic} — студент: ${p.student_surname} — рук.: ${p.supervisor_surname}
-                    ${p.has_commission ? '<span style="color:red">(уже назначена)</span>' : ''}
-                </label>`;
-                projectsDiv.appendChild(div);
-            });
+        if (list.length === 0) {
+            projectsDiv.innerHTML = '<div class="text-muted">Проекты не найдены для выбранной дисциплины</div>';
+            projectsCount.textContent = 'Найдено: 0';
         } else {
-            projectsDiv.innerHTML = '<p>Проекты не найдены для выбранной дисциплины</p>';
+            list.forEach(p => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'form-check mb-1';
+                const dateStr = p.defense_date ? ` — ${p.defense_date}` : '';
+                const already = p.has_commission ? ' <span class="text-danger">(уже назначена)</span>' : '';
+                wrapper.innerHTML = `<input class="form-check-input" type="checkbox" name="project_id" value="${p.project_id}" id="p${p.project_id}">
+                    <label class="form-check-label" for="p${p.project_id}">[${p.project_id}] ${escapeHtml(p.topic)} — студент: ${escapeHtml(p.student_surname)} — рук.: ${escapeHtml(p.supervisor_surname)}${dateStr}${already}</label>`;
+                projectsDiv.appendChild(wrapper);
+            });
+            projectsCount.textContent = 'Найдено: ' + list.length;
         }
-        // Если дата уже выбрана, запустить проверку учителей
+        const date = document.getElementById('defense_date').value;
         if (date) checkBusyTeachers(date);
+    } catch (err) {
+        projectsDiv.innerHTML = `<div class="text-danger">Ошибка при загрузке проектов: ${err.message}</div>`;
     }
+}
 
-    async function checkBusyTeachers(date) {
+async function checkBusyTeachers(date) {
+    try {
         const res = await fetch('{{ url_for("blueprint_order.ajax_check_teachers") }}', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({defense_date: date})
         });
+        if (!res.ok) throw new Error('Ошибка запроса: ' + res.status);
         const data = await res.json();
         const busy = data.busy || [];
-        // Отключаем/подсвечиваем чекбоксы преподавателей
         document.querySelectorAll('input[name="teacher_id"]').forEach(cb => {
-            if (busy.indexOf(parseInt(cb.value)) !== -1) {
+            const id = parseInt(cb.value, 10);
+            if (busy.indexOf(id) !== -1) {
                 cb.disabled = true;
-                cb.parentElement.style.opacity = '0.5';
-                cb.parentElement.title = 'Этот преподаватель уже занят на выбранную дату';
+                cb.closest('.form-check').style.opacity = '0.5';
+                cb.closest('.form-check').title = 'Этот преподаватель занят на выбранную дату';
             } else {
                 cb.disabled = false;
-                cb.parentElement.style.opacity = '1';
-                cb.parentElement.title = '';
+                cb.closest('.form-check').style.opacity = '1';
+                cb.closest('.form-check').title = '';
             }
         });
-        // Покажем уведомление
         const info = document.getElementById('busy_info');
-        if (busy.length) {
-            info.textContent = 'Некоторые преподаватели заняты в выбранную дату и будут отключены.';
-        } else {
-            info.textContent = '';
-        }
+        info.textContent = busy.length ? 'Некоторые преподаватели заняты в выбранную дату и отключены.' : '';
+    } catch (err) {
+        console.error(err);
     }
+}
 
-    document.addEventListener('DOMContentLoaded', function(){
-        document.getElementById('discipline_id').addEventListener('change', loadProjects);
-        document.getElementById('defense_date').addEventListener('change', function(){
-            const date = this.value;
-            if (date) checkBusyTeachers(date);
-        });
-        // initial load
-        loadProjects();
+function escapeHtml(s) {
+    if (!s && s !== 0) return '';
+    return String(s).replace(/[&<>"'`=\/]/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[c];
     });
-    </script>
-</head>
-<body>
-<center>
-    <h2>Сформировать комиссию — единая страница</h2>
+}
 
-    <form action="{{ url_for('blueprint_order.create') }}" method="post">
-        <fieldset style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-            <legend>Шаг 1. Выберите преподавателей (члены комиссии)</legend>
-            {% for t in teachers %}
-                <div style="margin:4px;">
-                    <label>
-                        <input type="checkbox" name="teacher_id" value="{{ t['teacher_id'] }}">
-                        {{ t['surname'] }} ({{ t['account_num'] }})
-                    </label>
-                </div>
-            {% endfor %}
-            <div id="busy_info" style="color:orange; margin-top:6px;"></div>
-        </fieldset>
-
-        <fieldset style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-            <legend>Шаг 2. Выберите дисциплину и дату</legend>
-            <label for="discipline_id">Дисциплина</label>
-            <select id="discipline_id" name="discipline_id" required>
-                {% for d in disciplines %}
-                    <option value="{{ d['discipline_id'] }}">{{ d['name'] }}</option>
-                {% endfor %}
-            </select>
-            <br><br>
-            <label for="defense_date">Дата комиссии</label>
-            <input id="defense_date" type="date" name="defense_date" required>
-        </fieldset>
-
-        <fieldset style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-            <legend>Шаг 3. Выберите проекты (студентов)</legend>
-            <div id="projects">
-                <!-- проекты подгружаются AJAX -->
-                Загрузка...
-            </div>
-        </fieldset>
-
-        <input type="submit" value="Сформировать комиссию">
-    </form>
-
-    <br>
-    <a href="{{ url_for('blueprint_order.schedule') }}" target="_blank">Посмотреть общее расписание</a>
-    <br><br>
-    <a href="{{ url_for('main_menu') }}">Главное меню</a>
-</center>
-</body>
-</html>
+document.addEventListener('DOMContentLoaded', function(){
+    const discEl = document.getElementById('discipline_id');
+    const dateEl = document.getElementById('defense_date');
+    discEl.addEventListener('change', loadProjects);
+    dateEl.addEventListener('change', function(){
+        const date = this.value;
+        if (date) checkBusyTeachers(date);
+    });
+    loadProjects();
+});
+</script>
+{% endblock %}
