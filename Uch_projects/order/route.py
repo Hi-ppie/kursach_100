@@ -178,7 +178,6 @@ def order_index():
     return redirect(url_for('blueprint_order.create'))
 
 
-# Восстановим старый exit для совместимости с шаблонами
 @blueprint_order.route('/exit', methods=["GET"])
 @group_required
 def exit():

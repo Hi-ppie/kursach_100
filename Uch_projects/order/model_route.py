@@ -114,13 +114,7 @@ def get_schedule(provider):
     return schedule
 
 def create_commissions(provider, teacher_ids: list, projects: list, defense_date: str):
-    """
-    Создаёт для каждого проекта запись в commission_schedule и добавляет членов комиссии.
-    teacher_ids: list of int
-    projects: list of dicts, каждый содержит project_id и supervisor_id и т.д.
-    defense_date: 'YYYY-MM-DD' string
-    Возвращает tuple (created, skipped)
-    """
+
     created = []
     skipped = []
 
