@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Формирование комиссии — шаг 2{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-10 offset-lg-1">
+    <div class="card-compact">
+      <h3 class="mb-2">Формирование комиссии — шаг 2</h3>
+      <p class="form-text-muted">
+        Дата: <strong>{{ defense_date }}</strong>,
+        дисциплина: <strong>{{ discipline_name }}</strong>
+      </p>
+
+      {% if error %}
+        <div class="alert alert-warning">{{ error }}</div>
+      {% endif %}
+
+      {% if busy_teachers %}
+        <div class="alert alert-warning">
+          Следующие преподаватели уже заняты на эту дату и не будут включены в комиссию:<br>
+          {{ busy_teachers|join(', ') }}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('blueprint_order.select_projects') }}">
+        {% if projects %}
+          <div class="mb-2">
+            <label class="form-label">Проекты</label>
+            <div class="border rounded p-2" style="max-height:260px; overflow:auto;">
+              {% for p in projects %}
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" name="project_id"
+                         value="{{ p['project_id'] }}" id="p{{p['project_id']}}">
+                  <label class="form-check-label" for="p{{p['project_id']}}">
+                    [{{ p['project_id'] }}] {{ p['topic'] }}
+                    — студент: {{ p['student_surname'] }}
+                    — рук.: {{ p['supervisor_surname'] }}
+                    {% if p['defense_date'] %}
+                      — дата защиты: {{ p['defense_date'] }}
+                    {% endif %}
+                    {% if p['has_commission'] %}
+                      <span class="text-danger">(для этого проекта уже назначена комиссия)</span>
+                    {% endif %}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="form-text text-muted mt-1">
+              Отметьте один или несколько проектов, для которых нужно сформировать комиссию.
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted">Проекты для выбранной дисциплины не найдены.</p>
+        {% endif %}
+
+        <div class="mt-3 d-flex justify-content-between">
+          <a class="btn btn-outline-secondary" href="{{ url_for('blueprint_order.create') }}">Назад</a>
+          <button class="btn btn-primary" type="submit" name="action" value="create"
+                  {% if not projects %}disabled{% endif %}>
+            Создать комиссию
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

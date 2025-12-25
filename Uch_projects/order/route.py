@@ -1,13 +1,16 @@
 import os
-import datetime
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
-from order.model_route import (
-    model_route, model_route_add, model_route_insert, model_route_delete,
-    get_disciplines, get_projects_by_discipline, create_commissions, get_busy_teachers_by_date, get_schedule
-)
-from database.sql_provider import SQLProvider
-from database.select import execute_sql
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from access import group_required
+from database.sql_provider import SQLProvider
+from database.select import select_dict
+from .model_route import (
+    get_disciplines,
+    get_projects_by_discipline,
+    get_busy_teachers_by_date,
+    get_schedule,
+    create_commissions,
+    model_route_delete,
+)
 
 blueprint_order = Blueprint(
     'blueprint_order',
@@ -15,186 +18,247 @@ blueprint_order = Blueprint(
     template_folder='templates'
 )
 
+# Провайдер SQL для order/sql
 provider = SQLProvider(os.path.join(os.path.dirname(__file__), 'sql'))
 
-# Одностраничный поток создания комиссии
-@blueprint_order.route('/create', methods=["GET", "POST"])
-@group_required
-def create():
-    if request.method == 'GET':
-        teachers_info = model_route(provider, {}, 'teachers.sql')
-        if not teachers_info.status:
-            return render_template("basket_err.html", error="получении списка преподавателей")
-        disciplines = get_disciplines(provider)
-        return render_template("select_teachers_onepage.html", teachers=teachers_info.result, disciplines=disciplines)
-    else:
-        teacher_ids = request.form.getlist('teacher_id')
-        project_ids = request.form.getlist('project_id')
-        defense_date = request.form.get('defense_date')
-        if not teacher_ids or not project_ids or not defense_date:
-            return render_template("basket_err.html", error="не выбраны преподаватели/проекты/дата")
-        all_projects = []
-        discipline_id = request.form.get('discipline_id')
-        if discipline_id:
-            projects_all = get_projects_by_discipline(provider, int(discipline_id))
-            for p in projects_all:
-                if str(p['project_id']) in project_ids:
-                    all_projects.append(p)
-        created, skipped = create_commissions(provider, [int(x) for x in teacher_ids], all_projects, defense_date)
-        return render_template("commission_result.html", created=created, skipped=skipped)
 
-
-# AJAX endpoint: получить проекты по дисциплине (JSON)
-@blueprint_order.route('/ajax/projects', methods=['POST'])
-@group_required
-def ajax_projects():
-    discipline_id = None
-    try:
-        if request.is_json:
-            discipline_id = request.json.get('discipline_id')
-        else:
-            discipline_id = request.form.get('discipline_id')
-    except Exception:
-        pass
-    if not discipline_id:
-        return jsonify({'error': 'no discipline_id'}), 400
-    projects = get_projects_by_discipline(provider, int(discipline_id))
-    # Конвертируем даты в строки, чтобы jsonify не сломался в браузере
-    for p in projects:
-        for k, v in list(p.items()):
-            if isinstance(v, (datetime.date, datetime.datetime)):
-                p[k] = v.isoformat()
-    return jsonify({'projects': projects})
-
-
-# AJAX endpoint: получить занятых преподавателей по дате
-@blueprint_order.route('/ajax/check_teachers', methods=['POST'])
-@group_required
-def ajax_check_teachers():
-    defense_date = None
-    try:
-        if request.is_json:
-            defense_date = request.json.get('defense_date')
-        else:
-            defense_date = request.form.get('defense_date')
-    except Exception:
-        pass
-    if not defense_date:
-        return jsonify({'error': 'no date'}), 400
-    busy = get_busy_teachers_by_date(provider, defense_date)
-    return jsonify({'busy': busy})
-
-
-# AJAX endpoint: удалить комиссию по cs_id (удаляет сначала членов, затем сам график)
-@blueprint_order.route('/ajax/delete_cs', methods=['POST'])
-@group_required
-def ajax_delete_cs():
-    try:
-        data = request.get_json() if request.is_json else request.form.to_dict()
-        cs_id = data.get('cs_id')
-        if not cs_id:
-            return jsonify({'ok': False, 'error': 'no cs_id provided'}), 400
-        # Удаляем членов комиссии, затем сам график (сначала members, иначе FK)
-        sql_del_members = "DELETE FROM commission_members WHERE cs_id = %(cs_id)s;"
-        sql_del_schedule = "DELETE FROM commission_schedule WHERE cs_id = %(cs_id)s;"
-        execute_sql(sql_del_members, {'cs_id': cs_id})
-        execute_sql(sql_del_schedule, {'cs_id': cs_id})
-        return jsonify({'ok': True})
-    except Exception as e:
-        print("ajax_delete_cs error:", e)
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-# Страница расписания комиссий (FullCalendar)
-@blueprint_order.route('/schedule', methods=['GET'])
-@group_required
-def schedule():
-    schedule_list = get_schedule(provider)
-    # Конвертируем даты в ISO-строки (чтобы template.tojson корректно сериализовал)
-    for row in schedule_list:
-        v = row.get('cs_date')
-        if isinstance(v, (datetime.date, datetime.datetime)):
-            row['cs_date'] = v.isoformat()
-        if row.get('project_topic') is None:
-            row['project_topic'] = ''
-    return render_template("schedule.html", schedule=schedule_list)
-
-
-# debug endpoint — вернуть готовые события для FullCalendar (используется сайтом schedule)
-@blueprint_order.route('/debug_events', methods=['GET'])
-@group_required
-def debug_events():
-    try:
-        schedule_list = get_schedule(provider)
-
-        # Получим всех преподавателей (teacher_id -> surname)
-        teachers_info = model_route(provider, {}, 'teachers.sql')
-        teacher_map = {}
-        if teachers_info.status:
-            for t in teachers_info.result:
-                teacher_map[int(t['teacher_id'])] = t.get('surname', str(t.get('teacher_id')))
-
-        # Нормализуем даты и project_topic
-        for row in schedule_list:
-            v = row.get('cs_date')
-            if isinstance(v, (datetime.date, datetime.datetime)):
-                row['cs_date'] = v.isoformat()
-            if row.get('project_topic') is None:
-                row['project_topic'] = ''
-
-        # Группируем по cs_id и формируем events (title: "Project (Surname1, Surname2)")
-        grouped = {}
-        for r in schedule_list:
-            cid = r['cs_id']
-            if cid not in grouped:
-                grouped[cid] = {
-                    'cs_id': cid,
-                    'cs_date': r['cs_date'],
-                    'project': r['project_topic'] or ('Проект ' + str(r.get('project_id'))),
-                    'teachers': []
-                }
-            if r.get('teacher_id'):
-                grouped[cid]['teachers'].append(int(r['teacher_id']))
-
-        events = []
-        for g in grouped.values():
-            # заменяем id на фамилии (если есть), иначе оставляем id
-            surnames = [teacher_map.get(tid, str(tid)) for tid in g['teachers']]
-            title = g['project']
-            if surnames:
-                title = f"{title} ({', '.join(surnames)})"
-            events.append({'id': g['cs_id'], 'title': title, 'start': g['cs_date']})
-
-        return jsonify(events)
-    except Exception as e:
-        print("DEBUG_EVENTS error:", e)
-        return jsonify({'error': str(e)}), 500
-
-
-# Alias для совместимости со старыми шаблонами — перенаправляет на одностраничный поток
-@blueprint_order.route('/', methods=["GET"])
+# ==========================
+# Главная точка входа в модуль комиссий
+# ==========================
+@blueprint_order.route('/', methods=['GET'])
 @group_required
 def order_index():
+    """
+    Простой редирект на создание комиссии.
+    """
     return redirect(url_for('blueprint_order.create'))
 
 
-@blueprint_order.route('/exit', methods=["GET"])
+# ==========================
+# ШАГ 1: выбор преподавателей, дисциплины и даты
+# ==========================
+@blueprint_order.route('/create', methods=['GET', 'POST'])
 @group_required
-def exit():
-    if 'Cl_id' in session:
-        session.pop('Cl_id')
-    if 'record_book_num' in session:
-        session.pop('record_book_num')
-    if 'basket' in session:
-        session.pop('basket')
-    if 'project_id' in session:
-        session.pop('project_id')
-    if 'defense_date' in session:
-        session.pop('defense_date')
-    if 'mode' in session:
-        session.pop('mode')
-    session.pop('selected_teachers', None)
-    session.pop('selected_discipline', None)
-    session.pop('selected_defense_date', None)
-    session.pop('available_projects', None)
-    return redirect('/')
+def create():
+    """
+    Шаг 1: выбор преподавателей + дисциплины + даты.
+    Никакого JS и AJAX — всё через GET/POST.
+    """
+    # На GET показываем форму
+    if request.method == 'GET':
+        # Получаем список дисциплин и преподавателей
+        disciplines = get_disciplines(provider)
+
+        # teachers.sql возвращает teacher_id, surname, account_num, teacher_number
+        teachers = select_dict(provider.get('teachers.sql'), {})
+
+        error = request.args.get('error')
+        return render_template(
+            'order_select_step1.html',
+            disciplines=disciplines,
+            teachers=teachers,
+            error=error
+        )
+
+    # POST — обрабатываем выбор
+    teacher_ids = request.form.getlist('teacher_id')
+    discipline_id = request.form.get('discipline_id')
+    defense_date = request.form.get('defense_date')
+
+    # Валидация
+    if not teacher_ids or not discipline_id or not defense_date:
+        # Вернёмся на шаг 1 с сообщением
+        disciplines = get_disciplines(provider)
+        teachers = select_dict(provider.get('teachers.sql'), {})
+        return render_template(
+            'order_select_step1.html',
+            disciplines=disciplines,
+            teachers=teachers,
+            error='Выберите хотя бы одного преподавателя, дисциплину и дату.'
+        )
+
+    # Сохраняем промежуточные данные в сессии
+    session['order_teachers'] = [int(t) for t in teacher_ids]
+    session['order_disc_id'] = int(discipline_id)
+    session['order_date'] = defense_date
+
+    # Переход на шаг выбора проектов
+    return redirect(url_for('blueprint_order.select_projects'))
+
+
+# ==========================
+# ШАГ 2: выбор проектов и создание комиссий
+# ==========================
+@blueprint_order.route('/select-projects', methods=['GET', 'POST'])
+@group_required
+def select_projects():
+    """
+    Шаг 2:
+      - GET: показываем доступные проекты по дисциплине, предупреждаем о занятых преподавателях.
+      - POST: принимаем выбранные проекты, создаём комиссии, показываем результат.
+    """
+    teacher_ids = session.get('order_teachers')
+    discipline_id = session.get('order_disc_id')
+    defense_date = session.get('order_date')
+
+    # Если пользователь зашёл сюда напрямую без шага 1 — отправим его обратно.
+    if not teacher_ids or not discipline_id or not defense_date:
+        return redirect(url_for('blueprint_order.create'))
+
+    # GET — показать форму выбора проектов
+    if request.method == 'GET':
+        # Список проектов по дисциплине
+        projects = get_projects_by_discipline(provider, discipline_id)
+
+        # Список занятых преподавателей на эту дату
+        busy_teachers = get_busy_teachers_by_date(provider, defense_date)
+
+        # Ограничим преподавателей только теми, кто свободен
+        effective_teachers = [tid for tid in teacher_ids if tid not in busy_teachers]
+        if not effective_teachers:
+            # Никто не свободен — смысла идти дальше нет
+            disciplines = get_disciplines(provider)
+            teachers = select_dict(provider.get('teachers.sql'), {})
+            # Очистим промежуточные данные
+            clear_order_session()
+            return render_template(
+                'order_select_step1.html',
+                disciplines=disciplines,
+                teachers=teachers,
+                error='На выбранную дату все выбранные преподаватели заняты. Выберите другую дату или других преподавателей.'
+            )
+
+        # Сохраним свободных преподавателей отдельно
+        session['order_teachers_effective'] = effective_teachers
+
+        # Найдём название дисциплины для вывода
+        disciplines = get_disciplines(provider)
+        discipline_name = next(
+            (d['name'] for d in disciplines if d['discipline_id'] == discipline_id),
+            ''
+        )
+
+        return render_template(
+            'order_select_step2.html',
+            projects=projects,
+            defense_date=defense_date,
+            discipline_name=discipline_name,
+            busy_teachers=busy_teachers
+        )
+
+    # POST — создание комиссий
+    action = request.form.get('action')
+    if action != 'create':
+        return redirect(url_for('blueprint_order.create'))
+
+    project_ids = request.form.getlist('project_id')
+    if not project_ids:
+        # Ничего не выбрали — перерисуем тот же шаг с сообщением
+        projects = get_projects_by_discipline(provider, discipline_id)
+        busy_teachers = get_busy_teachers_by_date(provider, defense_date)
+        disciplines = get_disciplines(provider)
+        discipline_name = next(
+            (d['name'] for d in disciplines if d['discipline_id'] == discipline_id),
+            ''
+        )
+        return render_template(
+            'order_select_step2.html',
+            projects=projects,
+            defense_date=defense_date,
+            discipline_name=discipline_name,
+            busy_teachers=busy_teachers,
+            error='Выберите хотя бы один проект.'
+        )
+
+    # Сопоставим выбранные проекты с их полными данными
+    all_projects = get_projects_by_discipline(provider, discipline_id)
+    proj_map = {p['project_id']: p for p in all_projects}
+
+    selected_projects = []
+    for pid in project_ids:
+        try:
+            pid_int = int(pid)
+        except ValueError:
+            continue
+        if pid_int in proj_map:
+            selected_projects.append(proj_map[pid_int])
+
+    if not selected_projects:
+        # На всякий случай
+        projects = get_projects_by_discipline(provider, discipline_id)
+        busy_teachers = get_busy_teachers_by_date(provider, defense_date)
+        disciplines = get_disciplines(provider)
+        discipline_name = next(
+            (d['name'] for d in disciplines if d['discipline_id'] == discipline_id),
+            ''
+        )
+        return render_template(
+            'order_select_step2.html',
+            projects=projects,
+            defense_date=defense_date,
+            discipline_name=discipline_name,
+            busy_teachers=busy_teachers,
+            error='Не удалось сопоставить выбранные проекты. Повторите выбор.'
+        )
+
+    # Используем список "эффективных" преподавателей (свободных на эту дату)
+    effective_teachers = session.get('order_teachers_effective', teacher_ids)
+
+    # Создаём комиссии (логика уже есть в model_route.create_commissions)
+    created, skipped = create_commissions(
+        provider,
+        effective_teachers,
+        selected_projects,
+        defense_date
+    )
+
+    # Очищаем временные данные
+    clear_order_session()
+
+    return render_template(
+        'commission_result.html',
+        created=created,
+        skipped=skipped
+    )
+
+
+def clear_order_session():
+    """Вспомогательная функция: очистка временных данных по формированию комиссии."""
+    for key in ['order_teachers', 'order_disc_id', 'order_date', 'order_teachers_effective']:
+        session.pop(key, None)
+
+
+# ==========================
+# РАСПИСАНИЕ БЕЗ JS/AJAX
+# ==========================
+@blueprint_order.route('/schedule', methods=['GET'])
+@group_required
+def schedule():
+    """
+    Простой просмотр расписания комиссий без JS.
+    """
+    schedule = get_schedule(provider)
+    return render_template('schedule_simple.html', schedule=schedule)
+
+
+@blueprint_order.route('/delete', methods=['POST'])
+@group_required
+def delete_cs():
+    """
+    Удаление комиссии (и её членов) обычной HTML-формой POST.
+    Ожидаем project_id (как в текущих SQL-файлах).
+    """
+    project_id = request.form.get('project_id')
+
+    if not project_id:
+        return render_template('basket_err.html', error='удалении комиссии')
+
+    try:
+        project_id_int = int(project_id)
+    except ValueError:
+        return render_template('basket_err.html', error='удалении комиссии')
+
+    # model_route_delete ожидает словарь с project_id
+    model_route_delete(provider, {'project_id': project_id_int})
+
+    return redirect(url_for('blueprint_order.schedule'))
