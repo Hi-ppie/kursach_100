@@ -23,14 +23,29 @@
       {% endif %}
 
       <form method="post" action="{{ url_for('blueprint_order.select_projects') }}">
+
         {% if projects %}
+          {% set free_projects = [] %}
+          {# посчитаем, сколько проектов ещё без комиссии #}
+          {% for p in projects %}
+            {% if not p['has_commission'] %}
+              {% set _ = free_projects.append(p['project_id']) %}
+            {% endif %}
+          {% endfor %}
+
           <div class="mb-2">
             <label class="form-label">Проекты</label>
             <div class="border rounded p-2" style="max-height:260px; overflow:auto;">
               {% for p in projects %}
                 <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" name="project_id"
-                         value="{{ p['project_id'] }}" id="p{{p['project_id']}}">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="project_id"
+                    value="{{ p['project_id'] }}"
+                    id="p{{p['project_id']}}"
+                    {% if p['has_commission'] %}disabled{% endif %}
+                  >
                   <label class="form-check-label" for="p{{p['project_id']}}">
                     [{{ p['project_id'] }}] {{ p['topic'] }}
                     — студент: {{ p['student_surname'] }}
@@ -45,9 +60,16 @@
                 </div>
               {% endfor %}
             </div>
-            <div class="form-text text-muted mt-1">
-              Отметьте один или несколько проектов, для которых нужно сформировать комиссию.
-            </div>
+
+            {% if free_projects %}
+              <div class="form-text text-muted mt-1">
+                Отметьте один или несколько проектов, для которых ещё нет комиссии.
+              </div>
+            {% else %}
+              <div class="alert alert-info mt-2">
+                Для всех проектов по этой дисциплине уже назначены комиссии.
+              </div>
+            {% endif %}
           </div>
         {% else %}
           <p class="text-muted">Проекты для выбранной дисциплины не найдены.</p>
@@ -55,8 +77,13 @@
 
         <div class="mt-3 d-flex justify-content-between">
           <a class="btn btn-outline-secondary" href="{{ url_for('blueprint_order.create') }}">Назад</a>
-          <button class="btn btn-primary" type="submit" name="action" value="create"
-                  {% if not projects %}disabled{% endif %}>
+          <button
+            class="btn btn-primary"
+            type="submit"
+            name="action"
+            value="create"
+            {% if not projects or not free_projects %}disabled{% endif %}
+          >
             Создать комиссию
           </button>
         </div>

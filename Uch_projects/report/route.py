@@ -14,7 +14,7 @@ blueprint_report = Blueprint(
 # SQL-файлы отчётов
 provider = SQLProvider(os.path.join(os.path.dirname(__file__), 'sql'))
 
-# 🔧 ВАЖНО: report.json лежит в Uch_projects/data/, а не в report/data/
+# report.json лежит в Uch_projects/data/, а не в report/data/
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 with open(os.path.join(BASE_DIR, 'data', 'report.json'), encoding='utf-8') as f:
     report_dict = json.load(f)
@@ -23,6 +23,7 @@ with open(os.path.join(BASE_DIR, 'data', 'report.json'), encoding='utf-8') as f:
 @blueprint_report.route('/', methods=["GET"])
 @group_required
 def report_menu():
+    # items = список (название, id) для меню
     rep = [(item["name"], item["id"]) for item in report_dict.values()]
     return render_template("report_menu.html", items=rep)
 
@@ -31,6 +32,8 @@ def report_menu():
 @group_required
 def report_index():
     rep_id = request.args.get('id')
+    if not rep_id or rep_id not in report_dict:
+        return render_template('report_err.html', id='', message='Неизвестный отчёт.')
     return render_template('report_index.html', item=report_dict[rep_id])
 
 
@@ -40,17 +43,22 @@ def report_result():
     user_input = request.form
     rep_id = request.args.get('id') or user_input.get('id')
 
-    if not rep_id:
+    if not rep_id or rep_id not in report_dict:
         return redirect(url_for('blueprint_report.report_menu'))
 
+    rep_cfg = report_dict[rep_id]
+
+    # === СОЗДАНИЕ ОТЧЁТА ===
     if user_input.get('action') == 'Создать':
         result_info = model_route_create(
-            report_dict[rep_id]['proc'],
-            report_dict[rep_id]['type'],  # ← ВАЖНО
+            rep_cfg['proc'],
+            rep_cfg['type'],   # by_date / by_teacher
             user_input
         )
 
         if result_info:
+            # model_route_create возвращает ResultInfo, у тебя report_create.html
+            # ожидает в item либо сам result_info, либо текст сообщения.
             return render_template(
                 "report_create.html",
                 item=result_info,
@@ -64,27 +72,37 @@ def report_result():
                 message='Отчёт уже существует или не может быть создан! Нажмите "Посмотреть" для просмотра.'
             )
 
-
+    # === ПРОСМОТР ОТЧЁТА ===
     else:
         results, schema, stat = model_route_show(
             provider,
-            report_dict[rep_id]['type'],
+            rep_cfg['type'],
             user_input,
-            report_dict[rep_id]['sql']
+            rep_cfg['sql']
         )
+
         if results.status:
             return render_template(
                 "report_show.html",
                 schema=schema,
                 results=results.result,
-                item=report_dict[rep_id],
+                item=rep_cfg,
                 date=user_input,
                 id=rep_id,
-                stat=stat  # Добавьте это
+                stat=stat
             )
         else:
+            # Тут делаем разный текст для разных типов отчётов
+            if rep_cfg['type'] == 'by_teacher':
+                msg = (
+                    'Отчёт по этому преподавателю ещё не создан или данных нет. '
+                    'Сначала нажмите "Создать", затем "Посмотреть".'
+                )
+            else:
+                msg = 'Отчёт за указанный период не найден!'
+
             return render_template(
                 "report_err.html",
                 id=rep_id,
-                message='Отчёт за указанный период не найден!'
+                message=msg
             )

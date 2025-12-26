@@ -102,15 +102,73 @@ def get_busy_teachers_by_date(provider, defense_date: str):
 
 def get_schedule(provider):
     """
-    Возвращает расписание комиссий (в виде списка словарей)
+    Возвращает расписание комиссий в сгруппированном виде:
+
+    [
+      {
+        'cs_date': date,
+        'commissions': [
+          {
+            'cs_id': ...,
+            'project_id': ...,
+            'project_topic': ...,
+            'discipline_name': ...,
+            'student_surname': ...,
+            'supervisor_surname': ...,
+            'teachers': [ 'Teacher1', 'Teacher2', ... ]
+          },
+          ...
+        ]
+      },
+      ...
+    ]
     """
     _sql = provider.get('get_schedule.sql')
     results, schemas = select_list(_sql, [])
     schedule = []
-    if results and schemas and results[0]:
-        cols = schemas[0]
-        for row in results[0]:
-            schedule.append(dict(zip(cols, row)))
+
+    if not (results and schemas and results[0]):
+        return schedule
+
+    cols = schemas[0]
+    rows = [dict(zip(cols, row)) for row in results[0]]
+
+    # Группируем: сначала по дате, внутри по cs_id
+    grouped_by_date = {}
+
+    for r in rows:
+        cs_date = r['cs_date']
+        cs_id = r['cs_id']
+
+        if cs_date not in grouped_by_date:
+            grouped_by_date[cs_date] = {}
+
+        commissions = grouped_by_date[cs_date]
+
+        if cs_id not in commissions:
+            commissions[cs_id] = {
+                'cs_id': cs_id,
+                'project_id': r['project_id'],
+                'project_topic': r.get('project_topic'),
+                'discipline_name': r.get('discipline_name'),
+                'student_surname': r.get('student_surname'),
+                'supervisor_surname': r.get('supervisor_surname'),
+                'teachers': []
+            }
+
+        # Добавляем преподавателя, если он есть (LEFT JOIN может вернуть NULL)
+        if r.get('teacher_surname'):
+            commissions[cs_id]['teachers'].append(r['teacher_surname'])
+
+    # Преобразуем в список, отсортированный по дате и cs_id
+    for cs_date, commissions in sorted(grouped_by_date.items(), key=lambda x: x[0]):
+        comm_list = list(commissions.values())
+        comm_list.sort(key=lambda c: c['cs_id'])
+        schedule.append({
+            'cs_date': cs_date,
+            'commissions': comm_list
+        })
+
     return schedule
 
 def create_commissions(provider, teacher_ids: list, projects: list, defense_date: str):

@@ -1,34 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Created</title>
-</head>
-    <body>
-    <center>
-        <div>
-            <h2>
-                Отчёт успешно создан
-            </h2>
-                <form action="{{ url_for('blueprint_report.report_result', id=id) }}" method="post">
+{% extends "base.html" %}
+{% block title %}Результат создания отчёта{% endblock %}
 
-                {% if id == '1' %}
-                 <!-- отчёт по дате -->
-                <input type="hidden" name="month" value="{{ user['month'] }}">
-                 <input type="hidden" name="year" value="{{ user['year'] }}">
-                    {% elif id == '2' %}
-                 <!-- отчёт по преподавателю -->
-                 <input type="hidden" name="teacher_id" value="{{ user['teacher_id'] }}">
-                {% endif %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact">
+      <h3 class="mb-3">Создание отчёта</h3>
 
-                 <input type="submit" name="action" value="Посмотреть">
-                </form>
-
-                <br>
-                <a href="{{ url_for('blueprint_report.report_menu') }}" method="get">Назад в меню отчётов</a>
-                <br>
-                <a href="{{ url_for('main_menu') }}">Главное меню</a>
+      {% if item and item.status %}
+        <div class="alert alert-success">
+          {{ item.result }}
         </div>
-    </center>
-    </body>
-</html>
+      {% elif item %}
+        <div class="alert alert-warning">
+          {{ item.err_message or 'Отчёт уже существует или не может быть создан.' }}
+        </div>
+      {% else %}
+        <div class="alert alert-danger">
+          Неизвестная ошибка при создании отчёта.
+        </div>
+      {% endif %}
+
+      <div class="mt-3">
+        <a class="btn btn-primary" href="{{ url_for('blueprint_report.report_index', id=id) }}">
+          Назад к параметрам отчёта
+        </a>
+        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_report.report_menu') }}">
+          Меню отчётов
+        </a>
+        <a class="btn btn-link" href="{{ url_for('main_menu') }}">
+          Главное меню
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

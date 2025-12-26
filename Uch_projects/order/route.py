@@ -46,44 +46,49 @@ def create():
     """
     # На GET показываем форму
     if request.method == 'GET':
-        # Получаем список дисциплин и преподавателей
-        disciplines = get_disciplines(provider)
-
-        # teachers.sql возвращает teacher_id, surname, account_num, teacher_number
-        teachers = select_dict(provider.get('teachers.sql'), {})
-
-        error = request.args.get('error')
-        return render_template(
-            'order_select_step1.html',
-            disciplines=disciplines,
-            teachers=teachers,
-            error=error
-        )
+        return _render_step1()
 
     # POST — обрабатываем выбор
     teacher_ids = request.form.getlist('teacher_id')
     discipline_id = request.form.get('discipline_id')
     defense_date = request.form.get('defense_date')
 
-    # Валидация
-    if not teacher_ids or not discipline_id or not defense_date:
-        # Вернёмся на шаг 1 с сообщением
-        disciplines = get_disciplines(provider)
-        teachers = select_dict(provider.get('teachers.sql'), {})
-        return render_template(
-            'order_select_step1.html',
-            disciplines=disciplines,
-            teachers=teachers,
-            error='Выберите хотя бы одного преподавателя, дисциплину и дату.'
-        )
+    # Валидация: обязательно должны быть выбраны
+    # - хотя бы один преподаватель
+    # - дисциплина
+    # - дата
+    if not teacher_ids:
+        return _render_step1(error='Выберите хотя бы одного преподавателя.')
+    if not discipline_id or not defense_date:
+        return _render_step1(error='Выберите дисциплину и дату комиссии.')
 
     # Сохраняем промежуточные данные в сессии
-    session['order_teachers'] = [int(t) for t in teacher_ids]
-    session['order_disc_id'] = int(discipline_id)
+    try:
+        session['order_teachers'] = [int(t) for t in teacher_ids]
+    except ValueError:
+        return _render_step1(error='Некорректный идентификатор преподавателя.')
+
+    try:
+        session['order_disc_id'] = int(discipline_id)
+    except ValueError:
+        return _render_step1(error='Некорректный идентификатор дисциплины.')
+
     session['order_date'] = defense_date
 
     # Переход на шаг выбора проектов
     return redirect(url_for('blueprint_order.select_projects'))
+
+
+def _render_step1(error: str | None = None):
+    """Вспомогательная функция для рендера шага 1."""
+    disciplines = get_disciplines(provider)
+    teachers = select_dict(provider.get('teachers.sql'), {})
+    return render_template(
+        'order_select_step1.html',
+        disciplines=disciplines,
+        teachers=teachers,
+        error=error
+    )
 
 
 # ==========================
@@ -115,17 +120,13 @@ def select_projects():
 
         # Ограничим преподавателей только теми, кто свободен
         effective_teachers = [tid for tid in teacher_ids if tid not in busy_teachers]
+
+        # ЖЁСТКАЯ защита: без свободных преподавателей комиссию создавать нельзя
         if not effective_teachers:
-            # Никто не свободен — смысла идти дальше нет
-            disciplines = get_disciplines(provider)
-            teachers = select_dict(provider.get('teachers.sql'), {})
-            # Очистим промежуточные данные
             clear_order_session()
-            return render_template(
-                'order_select_step1.html',
-                disciplines=disciplines,
-                teachers=teachers,
-                error='На выбранную дату все выбранные преподаватели заняты. Выберите другую дату или других преподавателей.'
+            return _render_step1(
+                error='На выбранную дату все выбранные преподаватели заняты. '
+                      'Выберите другую дату или другой состав комиссии.'
             )
 
         # Сохраним свободных преподавателей отдельно
@@ -180,11 +181,15 @@ def select_projects():
             pid_int = int(pid)
         except ValueError:
             continue
-        if pid_int in proj_map:
-            selected_projects.append(proj_map[pid_int])
+        proj = proj_map.get(pid_int)
+        if not proj:
+            continue
+        # Защита: не даём создать комиссию для проекта, у которого уже есть комиссия
+        if proj.get('has_commission'):
+            continue
+        selected_projects.append(proj)
 
     if not selected_projects:
-        # На всякий случай
         projects = get_projects_by_discipline(provider, discipline_id)
         busy_teachers = get_busy_teachers_by_date(provider, defense_date)
         disciplines = get_disciplines(provider)
@@ -203,6 +208,15 @@ def select_projects():
 
     # Используем список "эффективных" преподавателей (свободных на эту дату)
     effective_teachers = session.get('order_teachers_effective', teacher_ids)
+
+    # Дополнительная защита: если по какой-то причине effective_teachers пуст —
+    # не даём создать комиссию
+    if not effective_teachers:
+        clear_order_session()
+        return _render_step1(
+            error='Невозможно создать комиссию: не выбран ни один преподаватель. '
+                  'Выберите состав комиссии заново.'
+        )
 
     # Создаём комиссии (логика уже есть в model_route.create_commissions)
     created, skipped = create_commissions(
@@ -229,13 +243,13 @@ def clear_order_session():
 
 
 # ==========================
-# РАСПИСАНИЕ БЕЗ JS/AJAX
+# РАСПИСАНИЕ
 # ==========================
 @blueprint_order.route('/schedule', methods=['GET'])
 @group_required
 def schedule():
     """
-    Простой просмотр расписания комиссий без JS.
+    Просмотр расписания комиссий без JS.
     """
     schedule = get_schedule(provider)
     return render_template('schedule_simple.html', schedule=schedule)
