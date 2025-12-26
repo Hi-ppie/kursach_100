@@ -265,12 +265,12 @@ def delete_cs():
     project_id = request.form.get('project_id')
 
     if not project_id:
-        return render_template('basket_err.html', error='удалении комиссии')
+        return render_template('commission_err.html', error='удалении комиссии')
 
     try:
         project_id_int = int(project_id)
     except ValueError:
-        return render_template('basket_err.html', error='удалении комиссии')
+        return render_template('commission_err.html', error='удалении комиссии')
 
     # model_route_delete ожидает словарь с project_id
     model_route_delete(provider, {'project_id': project_id_int})
