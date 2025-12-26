@@ -4,7 +4,7 @@ from access import login_required
 from query.route import blueprint_query
 from auth.route import blueprint_auth
 from report.route import blueprint_report
-from order.route import blueprint_order
+from commission.route import blueprint_commission
 
 app = Flask(__name__)
 app.secret_key = 'You will never guess'
@@ -17,7 +17,7 @@ with open("data/access.json") as f:
 app.register_blueprint(blueprint_query, url_prefix='/query')
 app.register_blueprint(blueprint_auth, url_prefix='/auth')
 app.register_blueprint(blueprint_report, url_prefix='/report')
-app.register_blueprint(blueprint_order, url_prefix='/order')
+app.register_blueprint(blueprint_commission, url_prefix='/commission')
 
 @app.route('/', methods=["GET"])
 @login_required

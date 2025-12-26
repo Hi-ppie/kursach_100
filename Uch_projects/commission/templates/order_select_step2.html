@@ -22,7 +22,7 @@
         </div>
       {% endif %}
 
-      <form method="post" action="{{ url_for('blueprint_order.select_projects') }}">
+      <form method="post" action="{{ url_for('blueprint_commission.select_projects') }}">
 
         {% if projects %}
           {% set free_projects = [] %}
@@ -76,7 +76,7 @@
         {% endif %}
 
         <div class="mt-3 d-flex justify-content-between">
-          <a class="btn btn-outline-secondary" href="{{ url_for('blueprint_order.create') }}">Назад</a>
+          <a class="btn btn-outline-secondary" href="{{ url_for('blueprint_commission.create')}}">Назад</a>
           <button
             class="btn btn-primary"
             type="submit"

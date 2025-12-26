@@ -12,32 +12,32 @@ from .model_route import (
     model_route_delete,
 )
 
-blueprint_order = Blueprint(
-    'blueprint_order',
+blueprint_commission = Blueprint(
+    'blueprint_commission',
     __name__,
     template_folder='templates'
 )
 
-# Провайдер SQL для order/sql
+# Провайдер SQL для commission/sql
 provider = SQLProvider(os.path.join(os.path.dirname(__file__), 'sql'))
 
 
 # ==========================
 # Главная точка входа в модуль комиссий
 # ==========================
-@blueprint_order.route('/', methods=['GET'])
+@blueprint_commission.route('/', methods=['GET'])
 @group_required
-def order_index():
+def commission_index():
     """
     Простой редирект на создание комиссии.
     """
-    return redirect(url_for('blueprint_order.create'))
+    return redirect(url_for('blueprint_commission.create'))
 
 
 # ==========================
 # ШАГ 1: выбор преподавателей, дисциплины и даты
 # ==========================
-@blueprint_order.route('/create', methods=['GET', 'POST'])
+@blueprint_commission.route('/create', methods=['GET', 'POST'])
 @group_required
 def create():
     """
@@ -76,7 +76,7 @@ def create():
     session['order_date'] = defense_date
 
     # Переход на шаг выбора проектов
-    return redirect(url_for('blueprint_order.select_projects'))
+    return redirect(url_for('blueprint_commission.select_projects'))
 
 
 def _render_step1(error: str | None = None):
@@ -94,7 +94,7 @@ def _render_step1(error: str | None = None):
 # ==========================
 # ШАГ 2: выбор проектов и создание комиссий
 # ==========================
-@blueprint_order.route('/select-projects', methods=['GET', 'POST'])
+@blueprint_commission.route('/select-projects', methods=['GET', 'POST'])
 @group_required
 def select_projects():
     """
@@ -108,7 +108,7 @@ def select_projects():
 
     # Если пользователь зашёл сюда напрямую без шага 1 — отправим его обратно.
     if not teacher_ids or not discipline_id or not defense_date:
-        return redirect(url_for('blueprint_order.create'))
+        return redirect(url_for('blueprint_commission.create'))
 
     # GET — показать форму выбора проектов
     if request.method == 'GET':
@@ -150,7 +150,7 @@ def select_projects():
     # POST — создание комиссий
     action = request.form.get('action')
     if action != 'create':
-        return redirect(url_for('blueprint_order.create'))
+        return redirect(url_for('blueprint_commission.create'))
 
     project_ids = request.form.getlist('project_id')
     if not project_ids:
@@ -245,7 +245,7 @@ def clear_order_session():
 # ==========================
 # РАСПИСАНИЕ
 # ==========================
-@blueprint_order.route('/schedule', methods=['GET'])
+@blueprint_commission.route('/schedule', methods=['GET'])
 @group_required
 def schedule():
     """
@@ -255,7 +255,7 @@ def schedule():
     return render_template('schedule_simple.html', schedule=schedule)
 
 
-@blueprint_order.route('/delete', methods=['POST'])
+@blueprint_commission.route('/delete', methods=['POST'])
 @group_required
 def delete_cs():
     """
@@ -275,4 +275,4 @@ def delete_cs():
     # model_route_delete ожидает словарь с project_id
     model_route_delete(provider, {'project_id': project_id_int})
 
-    return redirect(url_for('blueprint_order.schedule'))
+    return redirect(url_for('blueprint_commission.schedule'))

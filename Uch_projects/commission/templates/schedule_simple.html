@@ -41,7 +41,7 @@
                     {% endif %}
                   </td>
                   <td>
-                    <form class="d-inline" method="post" action="{{ url_for('blueprint_order.delete_cs') }}">
+                    <form class="d-inline" method="post" action="{{ url_for('blueprint_commission.delete_cs') }}">
                       <input type="hidden" name="project_id" value="{{ c.project_id }}">
                       <button class="btn btn-sm btn-danger" type="submit">
                         Удалить
@@ -58,7 +58,7 @@
       {% endif %}
 
       <div class="mt-3">
-        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_order.create') }}">
+        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_commission.create') }}">
           Назад к формированию комиссий
         </a>
         <a class="btn btn-link" href="{{ url_for('main_menu') }}">Главное меню</a>

@@ -24,7 +24,7 @@
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link" href="{{ url_for('blueprint_query.query_menu') }}">Запросы</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('blueprint_report.report_menu') }}">Отчёты</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('blueprint_order.order_index') }}">Комиссии</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('blueprint_commission.create') }}">Комиссии</a></li>
       </ul>
       <ul class="navbar-nav">
         {% if session.get('user_group') %}
