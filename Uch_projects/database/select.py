@@ -42,15 +42,41 @@ def select_dict(_sql, user_dict: dict):
     print(result_dict)
     return result_dict
 
-def stored_proc(proc_name: str, rep_date: list):
-    msg=''
+def stored_proc(proc_name: str, params: list) -> str:
+    """
+    Вызывает хранимую процедуру и возвращает текст из SELECT '...' AS result.
+    Работает с mysql.connector: callproc + stored_results().
+    """
+    msg = None
     with DBContextManager(current_app.config['db_config']) as cursor:
         if cursor is None:
             raise ValueError('Курсор не создан')
+
+        # Важно: используем callproc, а не execute("CALL ...")
+        cursor.callproc(proc_name, params)
+
+        # Читаем все result-sets, возвращённые процедурой
+        # Берём тот, где есть колонка 'result'
+        if hasattr(cursor, 'stored_results'):
+            for result in cursor.stored_results():
+                cols = [d[0] for d in result.description] if result.description else []
+                if cols:
+                    rows = result.fetchall()
+                    if rows and 'result' in cols:
+                        msg = rows[0][cols.index('result')]
         else:
-            cursor.callproc(proc_name, rep_date)
-            msg = cursor.fetchall()
-    return msg
+            # fallback для драйверов без stored_results (PyMySQL/MySQLdb)
+            # Не обязателен, но оставим на всякий случай
+            while True:
+                if cursor.description:
+                    cols = [d[0] for d in cursor.description]
+                    rows = cursor.fetchall()
+                    if rows and 'result' in cols:
+                        msg = rows[0][cols.index('result')]
+                if not getattr(cursor, 'nextset', lambda: False)():
+                    break
+
+    return msg or ''
 
 def insert(_sql: str, user_dict: dict):
     last_inserted = None  # Инициализируем перед try

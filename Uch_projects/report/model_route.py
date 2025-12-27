@@ -9,49 +9,15 @@ class ResultInfo:
 
 
 def model_route_create(proc_name: str, rep_type: str, user_input: dict):
-
     if rep_type == 'by_date':
-        try:
-            user_list = [
-                rep_type,
-                int(user_input['month']),
-                int(user_input['year']),
-                None
-            ]
-        except Exception as e:
-            print(f"[model_route_create] invalid month/year: {e} - input: {user_input}")
-            return False
-
+        params = ['by_date', int(user_input.get('month')), int(user_input.get('year')), None]
     elif rep_type == 'by_teacher':
-        try:
-            user_list = [
-                rep_type,
-                None,
-                None,
-                int(user_input['teacher_id'])
-            ]
-        except Exception as e:
-            print(f"[model_route_create] invalid teacher_id: {e} - input: {user_input}")
-            return False
+        params = ['by_teacher', None, None, int(user_input.get('teacher_id'))]
     else:
-        return False
+        return ''  # важно вернуть строку, чтобы не попасть в fallback
 
-    msg = stored_proc(proc_name, user_list)  # ← Получаем msg
-
-    if msg:
-        # msg is a sequence of rows, each row is a tuple; stored proc returns SELECT '...' AS result
-        try:
-            result_message = msg[0][0]
-        except Exception as e:
-            print(f"[model_route_create] unexpected stored proc result format: {e} -> {msg}")
-            return False
-
-        if 'успешно создан' in result_message:
-            return True
-        else:
-            return False  # Включая 'уже существует'
-    else:
-        return False  # Если msg пустой или ошибка
+    msg = stored_proc(proc_name, params)
+    return msg or 'Процедура не вернула статус'
 
 
 def model_route_show(provider, rep_type: str, user_input: dict, sql_file: str):

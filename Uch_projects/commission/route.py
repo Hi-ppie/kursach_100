@@ -40,10 +40,7 @@ def commission_index():
 @blueprint_commission.route('/create', methods=['GET', 'POST'])
 @group_required
 def create():
-    """
-    Шаг 1: выбор преподавателей + дисциплины + даты.
-    Никакого JS и AJAX — всё через GET/POST.
-    """
+
     # На GET показываем форму
     if request.method == 'GET':
         return _render_step1()
@@ -53,7 +50,6 @@ def create():
     discipline_id = request.form.get('discipline_id')
     defense_date = request.form.get('defense_date')
 
-    # Валидация: обязательно должны быть выбраны
     # - хотя бы один преподаватель
     # - дисциплина
     # - дата

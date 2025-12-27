@@ -52,25 +52,15 @@ def report_result():
     if user_input.get('action') == 'Создать':
         result_info = model_route_create(
             rep_cfg['proc'],
-            rep_cfg['type'],   # by_date / by_teacher
+            rep_cfg['type'],  # by_date / by_teacher
             user_input
         )
-
-        if result_info:
-            # model_route_create возвращает ResultInfo, у тебя report_create.html
-            # ожидает в item либо сам result_info, либо текст сообщения.
-            return render_template(
-                "report_create.html",
-                item=result_info,
-                user=user_input,
-                id=rep_id
-            )
-        else:
-            return render_template(
-                "report_err.html",
-                id=rep_id,
-                message='Отчёт уже существует или не может быть создан! Нажмите "Посмотреть" для просмотра.'
-            )
+        return render_template(
+            "report_create.html",
+            item=(result_info or ''),
+            user=user_input,
+            id=rep_id
+        )
 
     # === ПРОСМОТР ОТЧЁТА ===
     else:
