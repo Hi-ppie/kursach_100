@@ -43,10 +43,7 @@ def select_dict(_sql, user_dict: dict):
     return result_dict
 
 def stored_proc(proc_name: str, params: list) -> str:
-    """
-    Вызывает хранимую процедуру и возвращает текст из SELECT '...' AS result.
-    Работает с mysql.connector: callproc + stored_results().
-    """
+
     msg = None
     with DBContextManager(current_app.config['db_config']) as cursor:
         if cursor is None:
