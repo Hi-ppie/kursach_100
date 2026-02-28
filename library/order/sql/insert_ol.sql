@@ -1,1 +1,0 @@
-INSERT INTO `order_list`(o_id, book_id) VALUES(%(o_id)s, %(book_id)s);

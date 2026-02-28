@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Поиск по дате{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>Поиск проектов по дате</h4>
+      <form action="{{ url_for('blueprint_query.query_result', id=1) }}" method="post">
+        <div class="mb-3">
+          <label class="form-label">Дата защиты</label>
+          <input
+            class="form-control"
+            type="text"
+            name="defense_date"
+            placeholder="ДД.ММ.ГГГГ, ДД/ММ/ГГГГ, ДД-ММ-ГГГГ или YYYY-MM-DD"
+            required
+          >
+          <div class="form-text">
+            Введите дату в одном из форматов: 11.05.2025, 11/05/2025, 11-05-2025 или 2025-05-11.
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Поиск</button>
+        <a class="btn btn-link" href="{{ url_for('blueprint_query.query_menu') }}">Назад</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,1 +1,0 @@
-INSERT INTO `order`(o_date, Cl_id) VALUES(CURDATE(), %(Cl_id)s)

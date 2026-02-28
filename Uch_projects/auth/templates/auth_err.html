@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Ошибка авторизации{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact text-center">
+      <h3>Пользователь не авторизован</h3>
+      <p class="text-muted">Пользователь с таким логином или паролем не существует.</p>
+      <a class="btn btn-primary" href="{{ url_for('blueprint_auth.auth_index') }}">Назад к авторизации</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

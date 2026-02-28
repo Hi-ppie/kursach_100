@@ -1,0 +1,1 @@
+SELECT teacher_id, surname, account_num, CONVERT(1, UNSIGNED) as teacher_number FROM teacher

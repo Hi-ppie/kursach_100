@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Меню отчётов{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact">
+      <h3>Главное меню отчётов</h3>
+      <div class="list-group mt-3">
+        {% for item,key in items %}
+          <a class="list-group-item list-group-item-action" href="{{ url_for('blueprint_report.report_index', id=key) }}">{{ item }}</a>
+        {% endfor %}
+      </div>
+      <a class="btn btn-link mt-3" href="{{ url_for('main_menu') }}">Назад в главное меню</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

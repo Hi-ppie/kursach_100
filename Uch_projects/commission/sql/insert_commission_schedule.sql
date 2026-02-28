@@ -1,0 +1,1 @@
+INSERT INTO `commission_schedule`(cs_date, project_id) VALUES(%(defense_date)s, %(project_id)s)

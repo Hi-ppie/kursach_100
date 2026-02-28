@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Ошибка поиска{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact text-center">
+      <h4>Ничего не найдено</h4>
+      <p class="text-muted">Попробуйте ввести другие параметры</p>
+      <a class="btn btn-primary" href="{{ url_for('blueprint_query.query_index', id=id) }}">Вернуться к вводу</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

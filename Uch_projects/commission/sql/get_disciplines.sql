@@ -1,0 +1,1 @@
+SELECT discipline_id, name FROM discipline ORDER BY name;

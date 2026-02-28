@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Поиск по студенту{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>Поиск проектов по студенту</h4>
+      <form action="{{ url_for('blueprint_query.query_result', id=2) }}" method="post">
+        <div class="mb-3">
+          <label class="form-label">Фамилия студента</label>
+          <input class="form-control" type="text" name="surname" placeholder="Введите фамилию">
+        </div>
+        <button class="btn btn-primary" type="submit">Поиск</button>
+        <a class="btn btn-link" href="{{ url_for('blueprint_query.query_menu') }}">Назад</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

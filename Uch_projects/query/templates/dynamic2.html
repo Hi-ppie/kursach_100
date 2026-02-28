@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Результат поиска{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-10 offset-md-1">
+    <div class="card-compact">
+      <h4>Результат поиска проектов по студенту: {{ results[0]['surname'] if results and results[0].get('surname') else '' }}</h4>
+      <p>Найдено позиций: {{ results|length }}</p>
+      <table class="table table-sm">
+        <thead><tr><th>Код</th><th>Тема</th><th>Оценка</th></tr></thead>
+        <tbody>
+          {% for r in results %}
+            <tr>
+              <td>{{ r['project_id'] }}</td>
+              <td>{{ r['topic'] }}</td>
+              <td>{{ r['grade'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a class="btn btn-link" href="{{ url_for('blueprint_query.query_index', id=id) }}">Назад к запросу</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

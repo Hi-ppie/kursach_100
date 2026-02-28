@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Результат создания отчёта{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact">
+      <h3 class="mb-3">Создание отчёта</h3>
+
+      {# Если item — строка (сообщение из процедуры), показываем её напрямую #}
+      {% if item is string %}
+        <div class="alert alert-info">
+          {{ item }}
+        </div>
+
+      {# Если item — объект с успешным статусом, показываем result #}
+      {% elif item and item.status %}
+        <div class="alert alert-success">
+          {{ item.result }}
+        </div>
+
+      {# Если item — объект без успешного статуса, показываем err_message или дефолт #}
+      {% elif item %}
+        <div class="alert alert-warning">
+          {{ item.err_message or 'Отчёт уже существует или не может быть создан.' }}
+        </div>
+
+      {# Во всех прочих случаях #}
+      {% else %}
+        <div class="alert alert-danger">
+          Неизвестная ошибка при создании отчёта.
+        </div>
+      {% endif %}
+
+      <div class="mt-3">
+        <a class="btn btn-primary" href="{{ url_for('blueprint_report.report_index', id=id) }}">
+          Назад к параметрам отчёта
+        </a>
+        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_report.report_menu') }}">
+          Меню отчётов
+        </a>
+        <a class="btn btn-link" href="{{ url_for('main_menu') }}">
+          Главное меню
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

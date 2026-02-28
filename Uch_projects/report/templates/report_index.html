@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Параметры отчёта{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card-compact">
+      <h4>{{ item['name'] }}</h4>
+      <form action="{{ url_for('blueprint_report.report_result', id=item['id']) }}" method="post">
+        <input type="hidden" name="id" value="{{ item['id'] }}">
+        {% if item['type'] == 'by_date' %}
+          <div class="mb-2"><label class="form-label">Месяц</label><input class="form-control" type="number" name="month" min="1" max="12" required></div>
+          <div class="mb-2"><label class="form-label">Год</label><input class="form-control" type="number" name="year" required></div>
+        {% elif item['type'] == 'by_teacher' %}
+          <div class="mb-2"><label class="form-label">ID преподавателя</label><input class="form-control" type="number" name="teacher_id" required></div>
+        {% endif %}
+        <button class="btn btn-primary" name="action" value="Посмотреть" type="submit">Посмотреть</button>
+        <button class="btn btn-outline-secondary" name="action" value="Создать" type="submit">Создать</button>
+      </form>
+      <a class="btn btn-link mt-2" href="{{ url_for('blueprint_report.report_menu') }}">Назад</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

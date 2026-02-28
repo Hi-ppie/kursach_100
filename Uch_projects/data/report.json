@@ -1,0 +1,20 @@
+{
+  "1": {
+    "id": "1",
+    "name": "Отчёт по защитам за месяц",
+    "proc": "make_report",
+    "type": "by_date",
+    "sql": "rep_by_date.sql",
+    "params": ["month", "year"],
+    "col": ["ID", "Тема", "Оценка", "Студент", "Руководитель"]
+  },
+  "2": {
+    "id": "2",
+    "name": "Отчёт по преподавателю",
+    "proc": "make_report",
+    "type": "by_teacher",
+    "sql": "rep_by_teacher.sql",
+    "params": ["teacher_id"],
+    "col": ["Студент", "Тема", "Оценка"]
+  }
+}

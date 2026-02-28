@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Результат формирования комиссии{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card-compact">
+      <h4>Результат формирования комиссии</h4>
+
+      {% if created %}
+        <div class="alert alert-success">
+          Создано комиссий: {{ created|length }}
+        </div>
+        <ul>
+          {% for c in created %}
+            <li>Проект {{ c['project_id'] }} — cs_id = {{ c['cs_id'] }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="alert alert-warning">
+          Комиссии не созданы.
+        </div>
+      {% endif %}
+
+      {% if skipped %}
+        <div class="alert alert-info mt-2">
+          Пропущено (научный руководитель совпадает):
+          <ul class="mb-0">
+            {% for s in skipped %}
+              <li>Проект {{ s['project_id'] }}, преподаватель {{ s['teacher_id'] }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="mt-4 d-flex flex-wrap gap-2">
+        <!-- Сформировать ещё комиссию -->
+        <a class="btn btn-primary" href="{{ url_for('blueprint_commission.create') }}">
+          Сформировать ещё
+        </a>
+
+        <!-- Перейти к расписанию (календарю) комиссий -->
+        <a class="btn btn-outline-primary" href="{{ url_for('blueprint_commission.schedule') }}">
+          Просмотреть расписание комиссий
+        </a>
+
+        <!-- Вернуться в главное меню -->
+        <a class="btn btn-link" href="{{ url_for('main_menu') }}">
+          Главное меню
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

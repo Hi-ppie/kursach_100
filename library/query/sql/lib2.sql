@@ -1,1 +1,0 @@
-SELECT publisher_id,publisher_name,publisher_SurnameCP,publisher_phone,publisher_FoundationYear,publisher_ContractDate FROM publisher WHERE publisher_city = (%s)
